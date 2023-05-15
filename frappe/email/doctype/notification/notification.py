@@ -167,7 +167,7 @@ def get_context(context):
 		"""Build recipients and send Notification"""
 
 		context = get_context(doc)
-		context = {"doc": doc, "alert": self, "comments": None}
+		context.update({"alert": self, "comments": None})
 		if doc.get("_comments"):
 			context["comments"] = json.loads(doc.get("_comments"))
 
@@ -182,6 +182,9 @@ def get_context(context):
 
 			if self.channel == "SMS":
 				self.send_sms(doc, context)
+
+			if self.channel == "WhatsApp":
+				self.send_whatsapp(doc, context)
 
 			if self.channel == "System Notification" or self.send_system_notification:
 				self.create_system_notification(doc, context)
@@ -304,6 +307,31 @@ def get_context(context):
 			receiver_list=self.get_receiver_list(doc, context),
 			msg=frappe.render_template(self.message, context),
 		)
+
+	def send_whatsapp(self, doc, context):
+		for receiver in self.get_receiver_list(doc, context):
+			contacts = frappe.get_all('Contact', filters={'mobile_no': receiver}, fields=['name'])
+			display_name = receiver
+			if len(contacts) == 1:
+				display_name = contactl[0].get("name")
+			if frappe.db.exists("WABA WhatsApp Contact", receiver):
+				contact = frappe.get_doc("WABA WhatsApp Contact", receiver)
+			else:
+				contact = frappe.get_doc(
+					doctype="WABA WhatsApp Contact",
+					whatsapp_id=receiver,
+					display_name=display_name,
+				).insert(ignore_permissions = True)
+			message = frappe.get_doc(
+				doctype="WABA WhatsApp Message",
+				status="Pending",
+				type="Outgoing",
+				message_type="Text",
+				message_body=frappe.render_template(self.message, context),
+				to=contact,
+			).insert(ignore_permissions = True)
+			message.send()
+
 
 	def get_list_of_recipients(self, doc, context):
 		recipients = []

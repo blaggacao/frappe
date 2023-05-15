@@ -60,7 +60,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "Email\nSlack\nSystem Notification\nSMS",
+   "options": "Email\nSlack\nSystem Notification\nSMS\nWhatsApp",
    "reqd": 1,
    "set_only_once": 1
   },

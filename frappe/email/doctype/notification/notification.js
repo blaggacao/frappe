@@ -102,7 +102,7 @@ Last comment: {{ comments[-1].comment }} by {{ comments[-1].by }}
 &lt;/ul&gt;
 </pre>
 			`;
-		} else if (in_list(["Slack", "System Notification", "SMS"], frm.doc.channel)) {
+		} else if (in_list(["Slack", "System Notification", "SMS", "WhatsApp"], frm.doc.channel)) {
 			template = `<h5>Message Example</h5>
 
 <pre>*Order Overdue*
@@ -193,6 +193,12 @@ frappe.ui.form.on("Notification", {
 				"channel",
 				"description",
 				`To use SMS Channel, initialize <a href="/app/sms-settings">SMS Settings</a>.`
+			);
+		} else if (frm.doc.channel === "WhatsApp" && frm.doc.__islocal) {
+			frm.set_df_property(
+				"channel",
+				"description",
+				`To use WhatsApp, initialize <a href="/app/waba-settings">WABA Settings</a>.`
 			);
 		} else {
 			frm.set_df_property("channel", "description", ` `);
