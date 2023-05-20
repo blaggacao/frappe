@@ -24,6 +24,8 @@
   "is_primary_address",
   "is_shipping_address",
   "disabled",
+  "longitude",
+  "latitude",
   "linked_with",
   "links"
  ],
@@ -145,6 +147,16 @@
    "fieldtype": "Table",
    "label": "Links",
    "options": "Dynamic Link"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Float",
+   "label": "Longitude"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Float",
+   "label": "Latitude"
   }
  ],
  "icon": "fa fa-map-marker",
