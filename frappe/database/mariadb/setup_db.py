@@ -23,7 +23,7 @@ def get_mariadb_version(version_string: str = ""):
 	return version.rsplit(".", 1)
 
 
-def setup_database(force, source_sql, verbose, socket, host, port, user, password):
+def setup_database(force, verbose, socket, host, port, user, password):
 	frappe.local.session = frappe._dict({"user": "Administrator"})
 
 	db_name = frappe.local.conf.db_name
@@ -51,8 +51,6 @@ def setup_database(force, source_sql, verbose, socket, host, port, user, passwor
 
 	# close root connection
 	root_conn.close()
-
-	bootstrap_database(db_name, verbose, source_sql)
 
 
 def drop_user_and_database(db_name, socket, host, port, user, password):
@@ -152,6 +150,7 @@ def check_compatible_versions():
 def get_root_connection(socket, host, port, user, password):
 	if not frappe.local.flags.root_connection:
 		from getpass import getpass, getuser
+
 		if not user:
 			user = frappe.conf.get("root_login") or getuser()
 

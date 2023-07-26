@@ -48,6 +48,7 @@ def _new_site(
 	db_socket=None,
 	db_host=None,
 	db_port=None,
+	setup_db=True,
 ):
 	"""Install a new Frappe site"""
 
@@ -87,6 +88,7 @@ def _new_site(
 			db_socket=db_socket,
 			db_host=db_host,
 			db_port=db_port,
+			setup=setup_db,
 		)
 
 		apps_to_install = (
@@ -124,9 +126,10 @@ def install_db(
 	db_socket=None,
 	db_host=None,
 	db_port=None,
+	setup=True,
 ):
 	import frappe.database
-	from frappe.database import setup_database
+	from frappe.database import bootstrap_database, setup_database
 
 	if not db_type:
 		db_type = frappe.conf.db_type
@@ -142,15 +145,21 @@ def install_db(
 	)
 	frappe.flags.in_install_db = True
 
-	setup_database(
-		force,
-		source_sql,
-		verbose,
-		socket=db_socket,
-		host=db_host,
-		port=db_port,
-		user=root_login,
-		password=root_password,
+	if setup:
+		setup_database(
+			force,
+			verbose,
+			socket=db_socket,
+			host=db_host,
+			port=db_port,
+			user=root_login,
+			password=root_password,
+		)
+
+	bootstrap_database(
+		db_name=frappe.conf.db_name,
+		verbose=verbose,
+		source_sql=source_sql,
 	)
 
 	frappe.conf.admin_password = frappe.conf.admin_password or admin_password
@@ -532,7 +541,7 @@ def make_conf(
 		db_type=db_type,
 		db_socket=db_socket,
 		db_host=db_host,
-		db_port=db_port
+		db_port=db_port,
 	)
 	sites_path = frappe.local.sites_path
 	frappe.destroy()

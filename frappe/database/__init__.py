@@ -10,7 +10,7 @@ from frappe.database.database import savepoint
 
 
 def setup_database(
-	force, source_sql=None, verbose=None, socket=None, host=None, port=None, user=None, password=None
+	force, verbose=None, socket=None, host=None, port=None, user=None, password=None
 ):
 	import frappe
 
@@ -18,14 +18,27 @@ def setup_database(
 		import frappe.database.postgres.setup_db
 
 		return frappe.database.postgres.setup_db.setup_database(
-			force, source_sql, verbose, socket, host, port, user, password
+			force, verbose, socket, host, port, user, password
 		)
 	else:
 		import frappe.database.mariadb.setup_db
 
 		return frappe.database.mariadb.setup_db.setup_database(
-			force, source_sql, verbose, socket, host, port, user, password
+			force, verbose, socket, host, port, user, password
 		)
+
+
+def bootstrap_database(db_name, verbose=None, source_sql=None):
+	import frappe
+
+	if frappe.conf.db_type == "postgres":
+		import frappe.database.postgres.setup_db
+
+		return frappe.database.postgres.setup_db.bootstrap_database(db_name, verbose, source_sql)
+	else:
+		import frappe.database.mariadb.setup_db
+
+		return frappe.database.mariadb.setup_db.bootstrap_database(db_name, verbose, source_sql)
 
 
 def drop_user_and_database(db_name, socket=None, host=None, port=None, user=None, password=None):
@@ -102,9 +115,7 @@ def get_command(
 		user = frappe.utils.esc(user, "$ ")
 		db_name = frappe.utils.esc(db_name, "$ ")
 
-		command = [
-			f"--user={user}"
-		]
+		command = [f"--user={user}"]
 		if socket:
 			socket = frappe.utils.esc(socket, "$ ")
 			command.append(f"--socket={socket}")

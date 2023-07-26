@@ -3,7 +3,7 @@ import os
 import frappe
 
 
-def setup_database(force, source_sql, verbose, socket, host, port, user, password):
+def setup_database(force, verbose, socket, host, port, user, password):
 	root_conn = get_root_connection(socket, host, port, user, password)
 	root_conn.commit()
 	root_conn.sql("end")
@@ -15,7 +15,6 @@ def setup_database(force, source_sql, verbose, socket, host, port, user, passwor
 	root_conn.close()
 
 	bootstrap_database(frappe.conf.db_name, verbose, source_sql=source_sql)
-	frappe.connect()
 
 
 def bootstrap_database(db_name, verbose, source_sql=None):
@@ -35,6 +34,7 @@ def bootstrap_database(db_name, verbose, source_sql=None):
 			fg="red",
 		)
 		sys.exit(1)
+	frappe.connect()
 
 
 def import_db_from_sql(source_sql=None, verbose=False):
@@ -78,6 +78,7 @@ def import_db_from_sql(source_sql=None, verbose=False):
 def get_root_connection(socket, host, port, user, password):
 	if not frappe.local.flags.root_connection:
 		from getpass import getpass, getuser
+
 		if not user:
 			user = frappe.conf.get("root_login") or getuser()
 
