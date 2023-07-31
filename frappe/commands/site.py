@@ -948,7 +948,7 @@ def _drop_site(
 	)
 
 	archived_sites_path = archived_sites_path or os.path.join(
-		frappe.get_app_path("frappe"), "..", "..", "..", "archived", "sites"
+		frappe.utils.get_bench_path(), "archived", "sites"
 	)
 	archived_sites_path = os.path.realpath(archived_sites_path)
 
