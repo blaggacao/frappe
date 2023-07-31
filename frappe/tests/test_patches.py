@@ -169,9 +169,9 @@ def check_patch_files(app):
 
 
 def _get_dotted_path(file: Path, app) -> str:
-	app_path = Path(get_bench_path()) / "apps" / app
+	app_path = Path(frappe.get_app_path(app))
 
 	*path, filename = file.relative_to(app_path).parts
 	base_filename = Path(filename).stem
 
-	return ".".join(path + [base_filename])
+	return ".".join([app] + path + [base_filename])
