@@ -73,8 +73,8 @@ def get_app_commands(app: str) -> dict:
 	ret = {}
 	try:
 		app_command_module = importlib.import_module(f"{app}.commands")
-	except ImportError as e:
-		if e.name == app:
+	except ModuleNotFoundError as e:
+		if e.name == f"{app}.commands":
 			return ret
 		traceback.print_exc()
 		return ret
