@@ -57,6 +57,7 @@ website_route_rules = [
 
 website_redirects = [
 	{"source": r"/desk(.*)", "target": r"/app\1"},
+	{"source": r"/.well-known/openid-configuration", r"target": "/api/method/frappe.integrations.oauth2.openid_configuration"},
 ]
 
 base_template = "templates/base.html"
