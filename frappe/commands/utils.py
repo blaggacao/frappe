@@ -464,7 +464,9 @@ def database(context, extra_args):
 	"""
 	Enter into the Database console for given site.
 	"""
-	_enter_console(context, extra_args=extra_args)
+	site = get_site(context)
+	frappe.init(site=site)
+	_enter_console(extra_args=extra_args)
 
 
 @click.command("mariadb", context_settings=EXTRA_ARGS_CTX)
@@ -474,8 +476,10 @@ def mariadb(context, extra_args):
 	"""
 	Enter into mariadb console for a given site.
 	"""
+	site = get_site(context)
+	frappe.init(site=site)
 	frappe.conf.db_type = "mariadb"
-	_enter_console(context, extra_args=extra_args)
+	_enter_console(extra_args=extra_args)
 
 
 @click.command("postgres", context_settings=EXTRA_ARGS_CTX)
@@ -485,13 +489,13 @@ def postgres(context, extra_args):
 	"""
 	Enter into postgres console for a given site.
 	"""
-	frappe.conf.db_type = "postgres"
-	_enter_console(context, extra_args=extra_args)
-
-
-def _enter_console(context, extra_args=None):
 	site = get_site(context)
 	frappe.init(site=site)
+	frappe.conf.db_type = "postgres"
+	_enter_console( extra_args=extra_args)
+
+
+def _enter_console(extra_args=None):
 	from frappe.database import get_command
 
 	bin, args, bin_name = get_command(
