@@ -149,20 +149,24 @@
    "options": "Dynamic Link"
   },
   {
+   "description": "ej. -74,0728694 (min 6 decimales)",
    "fieldname": "longitude",
    "fieldtype": "Float",
-   "label": "Longitude"
+   "label": "Longitude",
+   "precision": "7"
   },
   {
+   "description": "ej. 4,6543536 (min 7 decimales)",
    "fieldname": "latitude",
    "fieldtype": "Float",
-   "label": "Latitude"
+   "label": "Latitude",
+   "precision": "7"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-05-11 14:13:51.634730",
+ "modified": "2023-09-28 14:50:19.218878",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
