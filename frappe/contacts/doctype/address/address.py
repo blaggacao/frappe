@@ -117,6 +117,36 @@ class Address(Document):
 
 		return False
 
+	@frappe.whitelist()
+	def set_location(self):
+		geocode = self.fetch_geocode()
+		self.latitude = geocode["geometry"]["location"]["lat"]
+		self.longitude = geocode["geometry"]["location"]["lng"]
+		self.save()
+
+	def fetch_geocode(self):
+		if not frappe.db.get_single_value("Google Settings", "api_key"):
+			frappe.throw(_("Enter API key in Google Settings."))
+
+		import googlemaps
+
+		try:
+			maps_client = googlemaps.Client(key=frappe.db.get_single_value("Google Settings", "api_key"))
+		except Exception as e:
+			frappe.throw(e)
+
+		components = {
+			"administrative_area": self.city,
+			"country": self.country,
+		}
+
+		try:
+			geocodes = maps_client.geocode(self.address_line1, components=components)
+		except Exception as e:
+			frappe.throw(_(str(e)))
+
+		return geocodes[0] if geocodes else False
+
 
 def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 	if preferred_key in ["is_shipping_address", "is_primary_address"]:

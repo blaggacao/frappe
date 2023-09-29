@@ -16,6 +16,25 @@ frappe.ui.form.on("Address", {
 					link_name: frappe.dynamic_link.doc[frappe.dynamic_link.fieldname],
 				});
 			}
+		} else {
+			frm.add_custom_button(__("Fetch Lng & Lat"), () => {
+				if (frm.doc.__islocal) {
+					frappe.throw(__("Please save the document first."));
+				}
+				if (!frm.doc.country) {
+					frappe.throw(__("Cannot fetch longitude and latitude if country is missing."));
+				}
+				if (!frm.doc.city) {
+					frappe.throw(__("Cannot fetch longitude and latitude if city is missing."));
+				}
+				frappe.show_alert({
+					message: "Fetching Longitude & Latitude",
+					indicator: "orange",
+				});
+				frm.call("set_location", {}, () => {
+					frm.reload_doc();
+				});
+			}).css({ "font-weight": "bold", "background-color": "green" });
 		}
 		frm.set_query("link_doctype", "links", function () {
 			return {
@@ -71,5 +90,23 @@ frappe.ui.form.on("Address", {
 				}
 			},
 		]);
+	},
+	fetch_lng_lat: function (frm) {
+		if (frm.doc.__islocal) {
+			frappe.throw(__("Please save the document first."));
+		}
+		if (!frm.doc.country) {
+			frappe.throw(__("Cannot fetch longitude and latitude if country is missing."));
+		}
+		if (!frm.doc.city) {
+			frappe.throw(__("Cannot fetch longitude and latitude if city is missing."));
+		}
+		frappe.show_alert({
+			message: "Fetching Longitude & Latitude",
+			indicator: "orange",
+		});
+		frm.call("set_location", {}, () => {
+			frm.reload_doc();
+		});
 	},
 });
