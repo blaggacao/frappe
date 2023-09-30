@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 
 import frappe
 from frappe import _
@@ -310,24 +311,26 @@ def get_context(context):
 
 	def send_whatsapp(self, doc, context):
 		for receiver in self.get_receiver_list(doc, context):
-			contacts = frappe.get_all('Contact', filters={'mobile_no': receiver}, fields=['name'])
-			display_name = receiver
-			if len(contacts) == 1:
-				display_name = contactl[0].get("name")
+			receiver = re.sub(r"[^0-9]", "", receiver)
 			if frappe.db.exists("WABA WhatsApp Contact", receiver):
 				contact = frappe.get_doc("WABA WhatsApp Contact", receiver)
 			else:
+				display_name = receiver
+				contacts = frappe.get_all('Contact', filters={'mobile_no': receiver}, fields=['name'])
+				if len(contacts) == 1:
+					display_name = contactl[0].get("name")
 				contact = frappe.get_doc(
 					doctype="WABA WhatsApp Contact",
 					whatsapp_id=receiver,
 					display_name=display_name,
 				).insert(ignore_permissions = True)
+			message_body = frappe.render_template(self.message, context)
 			message = frappe.get_doc(
 				doctype="WABA WhatsApp Message",
 				status="Pending",
 				type="Outgoing",
 				message_type="Text",
-				message_body=frappe.render_template(self.message, context),
+				message_body=message_body,
 				to=contact,
 			).insert(ignore_permissions = True)
 			message.send()
