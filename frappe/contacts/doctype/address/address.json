@@ -62,13 +62,11 @@
    "label": "Address Line 2"
   },
   {
-   "default": "Bogot\u00e1",
    "fieldname": "city",
    "fieldtype": "Data",
    "in_global_search": 1,
    "in_list_view": 1,
    "label": "City/Town",
-   "options": "Bogot\u00e1\nCh\u00eda\nCajic\u00e1",
    "reqd": 1,
    "search_index": 1
   },
@@ -235,6 +233,5 @@
  ],
  "search_fields": "country, state",
  "sort_field": "modified",
- "sort_order": "DESC",
- "states": []
+ "sort_order": "DESC"
 }
