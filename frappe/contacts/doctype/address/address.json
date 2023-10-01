@@ -120,13 +120,13 @@
    "label": "Fax"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "is_primary_address",
    "fieldtype": "Check",
    "label": "Preferred Billing Address"
   },
   {
-   "default": "1",
+   "default": "0",
    "fieldname": "is_shipping_address",
    "fieldtype": "Check",
    "label": "Preferred Shipping Address"
