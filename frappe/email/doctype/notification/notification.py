@@ -326,25 +326,37 @@ def get_context(context):
 				contact = frappe.get_doc("WABA WhatsApp Contact", receiver)
 			else:
 				display_name = receiver
-				contacts = frappe.get_all('Contact', filters={'mobile_no': receiver}, fields=['name'])
+				contacts = frappe.get_all("Contact", filters={"mobile_no": receiver}, fields=["name"])
 				if len(contacts) == 1:
-					display_name = contactl[0].get("name")
+					display_name = contacts[0].get("name")
 				contact = frappe.get_doc(
 					doctype="WABA WhatsApp Contact",
 					whatsapp_id=receiver,
 					display_name=display_name,
-				).insert(ignore_permissions = True)
+				).insert(ignore_permissions=True)
 			message_body = frappe.render_template(self.message, context)
-			message = frappe.get_doc(
-				doctype="WABA WhatsApp Message",
-				status="Pending",
-				type="Outgoing",
-				message_type="Text",
-				message_body=message_body,
-				to=contact,
-			).insert(ignore_permissions = True)
-			message.send()
 
+			def get_chunks(s, maxlength):
+				start = 0
+				end = 0
+				while start + maxlength < len(s) and end != -1:
+					end = s.rfind("―――", start, start + maxlength + 1)
+					yield s[start:end]
+					start = end + 1
+				yield s[start:]
+
+			chunks = get_chunks(message_body, 4096)
+			for chunk in chunks:
+				print(chunk)
+				message = frappe.get_doc(
+					doctype="WABA WhatsApp Message",
+					status="Pending",
+					type="Outgoing",
+					message_type="Text",
+					message_body=chunk,
+					to=contact,
+				).insert(ignore_permissions=True)
+				message.send()
 
 	def get_list_of_recipients(self, doc, context):
 		recipients = []
@@ -450,13 +462,13 @@ def get_context(context):
 
 		template = load_template(".html")
 		if template:
-    			return template
+			return template
 
 		template = load_template(".md")
 		if template and md_as_html:
 			return frappe.utils.md_to_html(template)
 		elif template:
-    			return template
+			return template
 
 		return load_template(".txt")
 
