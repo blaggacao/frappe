@@ -24,9 +24,9 @@
   "is_primary_address",
   "is_shipping_address",
   "disabled",
-  "fetch_lng_lat",
   "longitude",
   "latitude",
+  "location_reviewed",
   "linked_with",
   "links"
  ],
@@ -162,16 +162,19 @@
    "precision": "7"
   },
   {
-   "description": "Use Google Maps Geocoding API to retreive longitude & latituted based on fields Address Line 1, City/Town & Country.",
-   "fieldname": "fetch_lng_lat",
-   "fieldtype": "Button",
-   "label": "Fetch Longitude & Latitute"
+   "default": "0",
+   "fieldname": "location_reviewed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Location Reviewed",
+   "print_hide": 1,
+   "report_hide": 1
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-09-29 13:33:39.490627",
+ "modified": "2023-10-04 03:11:21.221024",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
@@ -233,5 +236,6 @@
  ],
  "search_fields": "country, state",
  "sort_field": "modified",
- "sort_order": "DESC"
+ "sort_order": "DESC",
+ "states": []
 }

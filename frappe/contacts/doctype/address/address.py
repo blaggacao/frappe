@@ -122,6 +122,12 @@ class Address(Document):
 		geocode = self.fetch_geocode()
 		self.latitude = geocode["geometry"]["location"]["lat"]
 		self.longitude = geocode["geometry"]["location"]["lng"]
+		self.location_reviewed = False
+		self.save()
+
+	@frappe.whitelist()
+	def set_location_reviewed(self):
+		self.location_reviewed = True
 		self.save()
 
 	def fetch_geocode(self):

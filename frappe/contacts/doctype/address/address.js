@@ -17,24 +17,39 @@ frappe.ui.form.on("Address", {
 				});
 			}
 		} else {
-			frm.add_custom_button(__("Fetch Lng & Lat"), () => {
-				if (frm.doc.__islocal) {
-					frappe.throw(__("Please save the document first."));
-				}
-				if (!frm.doc.country) {
-					frappe.throw(__("Cannot fetch longitude and latitude if country is missing."));
-				}
-				if (!frm.doc.city) {
-					frappe.throw(__("Cannot fetch longitude and latitude if city is missing."));
-				}
-				frappe.show_alert({
-					message: "Fetching Longitude & Latitude",
-					indicator: "orange",
+			if (!(frm.doc.longitude && frm.doc.latitude)) {
+				frm.add_custom_button(__("Fetch Location"), () => {
+					if (!frm.doc.country) {
+						frappe.throw(
+							__("Cannot fetch longitude and latitude if country is missing.")
+						);
+					}
+					if (!frm.doc.city) {
+						frappe.throw(
+							__("Cannot fetch longitude and latitude if city is missing.")
+						);
+					}
+					frappe.show_alert({
+						message: "Fetching Longitude & Latitude",
+						indicator: "orange",
+					});
+					frm.call("set_location", {}, () => {
+						frm.reload_doc();
+					});
 				});
-				frm.call("set_location", {}, () => {
-					frm.reload_doc();
+				frm.change_custom_button_type(__("Fetch Location"), null, "info");
+			} else if (!frm.doc.location_reviewed) {
+				frm.add_custom_button(__("Review Location"), () => {
+					let route = `https://maps.google.com/?q=${frm.doc.latitude},${frm.doc.longitude}`;
+					window.open(route, "_blank");
+					frm.call("set_location_reviewed", {}, () => {
+						frm.reload_doc();
+					});
 				});
-			}).css({ "font-weight": "bold", "background-color": "green" });
+				frm.change_custom_button_type(__("Review Location"), null, "warning");
+			} else {
+				frm.set_intro(__("Location has been manually reviewed"), "green");
+			}
 		}
 		frm.set_query("link_doctype", "links", function () {
 			return {
@@ -90,23 +105,5 @@ frappe.ui.form.on("Address", {
 				}
 			},
 		]);
-	},
-	fetch_lng_lat: function (frm) {
-		if (frm.doc.__islocal) {
-			frappe.throw(__("Please save the document first."));
-		}
-		if (!frm.doc.country) {
-			frappe.throw(__("Cannot fetch longitude and latitude if country is missing."));
-		}
-		if (!frm.doc.city) {
-			frappe.throw(__("Cannot fetch longitude and latitude if city is missing."));
-		}
-		frappe.show_alert({
-			message: "Fetching Longitude & Latitude",
-			indicator: "orange",
-		});
-		frm.call("set_location", {}, () => {
-			frm.reload_doc();
-		});
 	},
 });
