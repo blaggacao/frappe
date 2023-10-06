@@ -57,6 +57,14 @@ $.extend(frappe.contacts, {
 			})
 			.then((address_display) => frm.set_value(_display_field, address_display));
 	},
+
+	review_address: (lat, lng, docname) => {
+		let route = `https://maps.google.com/?q=${lat},${lng}`;
+		window.open(route, "_blank");
+		return frappe.xcall("frappe.contacts.doctype.address.address.set_location_reviewed", {
+			docname: docname,
+		});
+	},
 });
 
 function new_record(doctype, link_doctype, link_name) {

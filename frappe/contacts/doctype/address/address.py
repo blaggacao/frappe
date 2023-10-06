@@ -125,7 +125,6 @@ class Address(Document):
 		self.location_reviewed = False
 		self.save()
 
-	@frappe.whitelist()
 	def set_location_reviewed(self):
 		self.location_reviewed = True
 		self.save()
@@ -175,6 +174,12 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 			return address[0].name
 
 	return
+
+
+@frappe.whitelist()
+def set_location_reviewed(docname):
+	print(docname)
+	frappe.get_doc("Address", docname).set_location_reviewed()
 
 
 @frappe.whitelist()

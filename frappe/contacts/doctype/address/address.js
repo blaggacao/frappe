@@ -40,11 +40,9 @@ frappe.ui.form.on("Address", {
 				frm.change_custom_button_type(__("Fetch Location"), null, "info");
 			} else if (!frm.doc.location_reviewed) {
 				frm.add_custom_button(__("Review Location"), () => {
-					let route = `https://maps.google.com/?q=${frm.doc.latitude},${frm.doc.longitude}`;
-					window.open(route, "_blank");
-					frm.call("set_location_reviewed", {}, () => {
-						frm.reload_doc();
-					});
+					frappe.contacts
+						.review_address(frm.doc.latitude, frm.doc.longitude, frm.doc.name)
+						.then(frm.reload_doc);
 				});
 				frm.change_custom_button_type(__("Review Location"), null, "warning");
 			} else {
