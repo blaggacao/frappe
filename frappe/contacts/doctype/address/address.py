@@ -117,6 +117,9 @@ class Address(Document):
 
 		return False
 
+	def before_insert(self):
+		self.set_location()
+
 	@frappe.whitelist()
 	def set_location(self):
 		geocode = self.fetch_geocode()
