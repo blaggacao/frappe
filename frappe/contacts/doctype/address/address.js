@@ -17,7 +17,7 @@ frappe.ui.form.on("Address", {
 				});
 			}
 		} else {
-			if (!(frm.doc.longitude && frm.doc.latitude)) {
+			if (!frm.doc.location_reviewed) {
 				frm.add_custom_button(__("Fetch Location"), () => {
 					if (!frm.doc.country) {
 						frappe.throw(
@@ -38,13 +38,6 @@ frappe.ui.form.on("Address", {
 					});
 				});
 				frm.change_custom_button_type(__("Fetch Location"), null, "info");
-			} else if (!frm.doc.location_reviewed) {
-				frm.add_custom_button(__("Review Location"), () => {
-					frappe.contacts
-						.review_address(frm.doc.latitude, frm.doc.longitude, frm.doc.name)
-						.then(frm.reload_doc);
-				});
-				frm.change_custom_button_type(__("Review Location"), null, "warning");
 			} else {
 				frm.set_intro(__("Location has been manually reviewed"), "green");
 			}
@@ -72,6 +65,11 @@ frappe.ui.form.on("Address", {
 				);
 			}
 		}
+	},
+	set_location_reviewed: function (frm) {
+		frm.call("set_location_reviewed", {}, () => {
+			frm.reload_doc();
+		});
 	},
 	validate: function (frm) {
 		// clear linked customer / supplier / sales partner on saving...

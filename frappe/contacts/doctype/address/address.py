@@ -1,6 +1,7 @@
 # Copyright (c) 2015, Frappe Technologies and contributors
 # License: MIT. See LICENSE
 
+import json
 from typing import Optional
 
 from jinja2 import TemplateSyntaxError
@@ -118,16 +119,22 @@ class Address(Document):
 		return False
 
 	def before_insert(self):
-		self.set_location()
+		# self.set_location()
+		pass
 
 	@frappe.whitelist()
 	def set_location(self):
 		geocode = self.fetch_geocode()
-		self.latitude = geocode["geometry"]["location"]["lat"]
-		self.longitude = geocode["geometry"]["location"]["lng"]
+		data = {
+			"name": self.name,
+			"latitude": geocode["geometry"]["location"]["lat"],
+			"longitude": geocode["geometry"]["location"]["lng"],
+		}
+		self.location = json.dumps(frappe.geo.utils.convert_to_geojson("coordinates", data))
 		self.location_reviewed = False
 		self.save()
 
+	@frappe.whitelist()
 	def set_location_reviewed(self):
 		self.location_reviewed = True
 		self.save()
@@ -180,9 +187,11 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 
 
 @frappe.whitelist()
-def set_location_reviewed(docname):
-	print(docname)
-	frappe.get_doc("Address", docname).set_location_reviewed()
+def set_location_reviewed(docname, location=None):
+	address = frappe.get_doc("Address", docname)
+	if location:
+		address.location = location
+	address.set_location_reviewed()
 
 
 @frappe.whitelist()

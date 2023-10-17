@@ -24,8 +24,8 @@
   "is_primary_address",
   "is_shipping_address",
   "disabled",
-  "longitude",
-  "latitude",
+  "location",
+  "set_location_reviewed",
   "location_reviewed",
   "linked_with",
   "links"
@@ -148,20 +148,6 @@
    "options": "Dynamic Link"
   },
   {
-   "description": "ej. -74,0728694 (min 6 decimales)",
-   "fieldname": "longitude",
-   "fieldtype": "Float",
-   "label": "Longitude",
-   "precision": "7"
-  },
-  {
-   "description": "ej. 4,6543536 (min 7 decimales)",
-   "fieldname": "latitude",
-   "fieldtype": "Float",
-   "label": "Latitude",
-   "precision": "7"
-  },
-  {
    "default": "0",
    "fieldname": "location_reviewed",
    "fieldtype": "Check",
@@ -169,12 +155,25 @@
    "label": "Location Reviewed",
    "print_hide": 1,
    "report_hide": 1
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Geolocation",
+   "mandatory_depends_on": "eval:doc.is_shipping_address || doc.address_type == \"Shipping\"",
+   "read_only_depends_on": "eval:doc.location_reviewed || (!doc.location)",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:!doc.location_reviewed",
+   "fieldname": "set_location_reviewed",
+   "fieldtype": "Button",
+   "label": "Location is ok \u2714"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-10-04 03:11:21.221024",
+ "modified": "2023-10-17 09:54:34.024550",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
