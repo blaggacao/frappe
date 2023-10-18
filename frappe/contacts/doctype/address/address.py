@@ -127,11 +127,13 @@ class Address(Document):
 		from frappe.geo import utils
 
 		geocode = self.fetch_geocode()
-		data = {
-			"name": self.name,
-			"latitude": geocode["geometry"]["location"]["lat"],
-			"longitude": geocode["geometry"]["location"]["lng"],
-		}
+		data = frappe._dict(
+			{
+				"name": self.name,
+				"latitude": geocode["geometry"]["location"]["lat"],
+				"longitude": geocode["geometry"]["location"]["lng"],
+			}
+		)
 		self.location = json.dumps(utils.convert_to_geojson("coordinates", data))
 		self.location_reviewed = False
 		self.save()
