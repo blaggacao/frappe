@@ -160,8 +160,7 @@
    "fieldname": "location",
    "fieldtype": "Geolocation",
    "mandatory_depends_on": "eval:doc.is_shipping_address || doc.address_type == \"Shipping\"",
-   "read_only_depends_on": "eval:doc.location_reviewed || (!doc.location)",
-   "reqd": 1
+   "read_only_depends_on": "eval:doc.location_reviewed"
   },
   {
    "depends_on": "eval:!doc.location_reviewed",
@@ -173,7 +172,7 @@
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-10-17 09:54:34.024550",
+ "modified": "2023-10-17 19:28:09.826012",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
