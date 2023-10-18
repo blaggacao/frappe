@@ -134,7 +134,7 @@ class Address(Document):
 				"longitude": geocode["geometry"]["location"]["lng"],
 			}
 		)
-		self.location = json.dumps(utils.convert_to_geojson("coordinates", data))
+		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
 		self.location_reviewed = False
 		self.save()
 
