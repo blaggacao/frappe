@@ -124,13 +124,15 @@ class Address(Document):
 
 	@frappe.whitelist()
 	def set_location(self):
+		from frappe.geo import utils
+
 		geocode = self.fetch_geocode()
 		data = {
 			"name": self.name,
 			"latitude": geocode["geometry"]["location"]["lat"],
 			"longitude": geocode["geometry"]["location"]["lng"],
 		}
-		self.location = json.dumps(frappe.geo.utils.convert_to_geojson("coordinates", data))
+		self.location = json.dumps(utils.convert_to_geojson("coordinates", data))
 		self.location_reviewed = False
 		self.save()
 
