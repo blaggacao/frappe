@@ -151,7 +151,6 @@
    "default": "0",
    "fieldname": "location_reviewed",
    "fieldtype": "Check",
-   "hidden": 1,
    "label": "Location Reviewed",
    "print_hide": 1,
    "report_hide": 1
