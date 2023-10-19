@@ -336,18 +336,19 @@ def get_context(context):
 				).insert(ignore_permissions=True)
 			message_body = frappe.render_template(self.message, context)
 
-			def get_chunks(s, maxlength):
+			def get_chunks(s):
 				start = 0
 				end = 0
-				while start + maxlength < len(s) and end != -1:
-					end = s.rfind("―――", start, start + maxlength + 1)
+				pattern = r"―――+"
+				for match in re.finditer(pattern, s):
+					end = match.start()
 					yield s[start:end]
+					end = match.end()
 					start = end + 1
 				yield s[start:]
 
-			chunks = get_chunks(message_body, 4096)
+			chunks = get_chunks(message_body)
 			for chunk in chunks:
-				print(chunk)
 				message = frappe.get_doc(
 					doctype="WABA WhatsApp Message",
 					status="Pending",
