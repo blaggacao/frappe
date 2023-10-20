@@ -355,7 +355,7 @@ def get_context(context):
 					type="Outgoing",
 					message_type="Text",
 					message_body=chunk,
-					to=contact,
+					to=contact.name,
 				).insert(ignore_permissions=True)
 				message.send()
 
