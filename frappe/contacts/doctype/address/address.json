@@ -12,21 +12,21 @@
   "address_type",
   "address_line1",
   "address_line2",
+  "pincode",
   "city",
   "county",
   "state",
   "country",
-  "pincode",
   "column_break0",
+  "location",
+  "set_location_reviewed",
+  "location_reviewed",
   "email_id",
   "phone",
   "fax",
   "is_primary_address",
   "is_shipping_address",
   "disabled",
-  "location",
-  "set_location_reviewed",
-  "location_reviewed",
   "linked_with",
   "links"
  ],
@@ -73,11 +73,13 @@
   {
    "fieldname": "county",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "County"
   },
   {
    "fieldname": "state",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "State/Province"
   },
   {
@@ -104,17 +106,20 @@
   {
    "fieldname": "email_id",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Email Address",
    "options": "Email"
   },
   {
    "fieldname": "phone",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Phone"
   },
   {
    "fieldname": "fax",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Fax"
   },
   {
@@ -171,7 +176,7 @@
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-10-17 19:28:09.826012",
+ "modified": "2023-10-21 08:15:06.968040",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
