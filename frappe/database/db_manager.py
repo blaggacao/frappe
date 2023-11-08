@@ -50,22 +50,22 @@ class DbManager:
 		return self.db.sql("SHOW DATABASES", pluck=True)
 
 	@staticmethod
-	def restore_database(target, source, user, password):
-		import os
+	def restore_database(verbose, target, source, user, password):
 		from shutil import which
 
 		from frappe.database import get_command
+		from frappe.utils import execute_in_shell
 
 		pv = which("pv")
 
 		command = []
 
 		if pv:
-			command.append(f"{pv}", f"{source}", "|")
-			source = ""
+			command.extend([f"{pv}", f"{source}", "|"])
+			source = []
 			print("Restoring Database file...")
 		else:
-			source = f"< {source}"
+			source = ["<", f"{source}"]
 
 		bin, args, bin_name = get_command(
 			socket=frappe.conf.db_socket,
@@ -82,5 +82,5 @@ class DbManager:
 			)
 		command.append(bin)
 		command.extend(args)
-		command.append(source)
-		os.system(" ".join(command))
+		command.extend(source)
+		execute_in_shell(" ".join(command), check_exit_code=True, verbose=verbose)
