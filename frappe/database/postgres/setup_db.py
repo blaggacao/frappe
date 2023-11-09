@@ -4,8 +4,8 @@ import frappe
 from frappe import _
 
 
-def setup_database(force, source_sql=None, verbose=False):
-	root_conn = get_root_connection(frappe.flags.root_login, frappe.flags.root_password)
+def setup_database(force, source_sql, verbose, socket, host, port, user, password):
+	root_conn = get_root_connection(socket, host, port, user, password)
 	root_conn.commit()
 	root_conn.sql("end")
 	root_conn.sql(f"DROP DATABASE IF EXISTS `{frappe.conf.db_name}`")
@@ -60,6 +60,7 @@ def import_db_from_sql(source_sql=None, verbose=False):
 		source = ["-f", f"{source_sql}"]
 
 	bin, args, bin_name = get_command(
+		socket=frappe.conf.db_socket,
 		host=frappe.conf.db_host,
 		port=frappe.conf.db_port,
 		user=frappe.conf.db_name,
@@ -79,36 +80,33 @@ def import_db_from_sql(source_sql=None, verbose=False):
 	frappe.cache.delete_keys("")  # Delete all keys associated with this site.
 
 
-def get_root_connection(root_login=None, root_password=None):
+def get_root_connection(socket, host, port, user, password):
 	if not frappe.local.flags.root_connection:
-		if not root_login:
-			root_login = frappe.conf.get("root_login") or None
+		from getpass import getpass, getuser
 
-		if not root_login:
-			root_login = input("Enter postgres super user: ")
+		if not user:
+			user = frappe.conf.get("root_login") or getuser()
 
-		if not root_password:
-			root_password = frappe.conf.get("root_password") or None
+		if not password:
+			password = frappe.conf.get("root_password")
 
-		if not root_password:
-			from getpass import getpass
-
-			root_password = getpass("Postgres super user password: ")
+		if not password and not socket:
+			password = getpass("Postgres super user password: ")
 
 		frappe.local.flags.root_connection = frappe.database.get_db(
-			host=frappe.conf.db_host,
-			port=frappe.conf.db_port,
-			user=root_login,
-			password=root_password,
+			socket=socket,
+			host=host,
+			port=port,
+			user=user,
+			password=password,
+			dbname=user,
 		)
 
 	return frappe.local.flags.root_connection
 
 
-def drop_user_and_database(db_name, root_login, root_password):
-	root_conn = get_root_connection(
-		frappe.flags.root_login or root_login, frappe.flags.root_password or root_password
-	)
+def drop_user_and_database(db_name, socket, host, port, user, password):
+	root_conn = get_root_connection(socket, host, port, user, password)
 	root_conn.commit()
 	root_conn.sql(
 		"SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = %s",
