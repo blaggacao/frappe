@@ -804,7 +804,7 @@ def is_downgrade(sql_file_path, verbose=False):
 	if frappe.conf.db_type != "mariadb":
 		return False
 
-	from semantic_version import Version
+	from packaging.version import Version
 
 	head = "INSERT INTO `tabInstalled Application` VALUES"
 
@@ -830,7 +830,9 @@ def is_downgrade(sql_file_path, verbose=False):
 					if app_name == "frappe":
 						try:
 							current_version = Version(frappe.__version__)
-							backup_version = Version(app_version[1:] if app_version[0] == "v" else app_version)
+							backup_version = Version(
+								frappe.utils.semver2pypi(app_version[1:] if app_version[0] == "v" else app_version)
+							)
 						except ValueError:
 							return False
 
