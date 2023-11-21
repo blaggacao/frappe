@@ -9,7 +9,7 @@ from tempfile import mkdtemp, mktemp
 from urllib.parse import urlparse
 
 import click
-from semantic_version import Version
+from packaging.version import Version
 
 import frappe
 

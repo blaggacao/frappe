@@ -24,8 +24,6 @@ from email.utils import formataddr, parseaddr
 from typing import Any, Literal
 from urllib.parse import quote, urlparse
 
-import semantic_version
-from packaging.version import Version
 from redis.exceptions import ConnectionError
 from werkzeug.test import Client
 
@@ -44,22 +42,6 @@ PHONE_NUMBER_PATTERN = re.compile(r"([0-9\ \+\_\-\,\.\*\#\(\)]){1,20}$")
 PERSON_NAME_PATTERN = re.compile(r"^[\w][\w\'\-]*( \w[\w\'\-]*)*$")
 WHITESPACE_PATTERN = re.compile(r"[\t\n\r]")
 MULTI_EMAIL_STRING_PATTERN = re.compile(r'[,\n](?=(?:[^"]|"[^"]*")*$)')
-
-
-def semver2pypi(version: str) -> Version:
-	"""Converts a semver version into a version from PyPI
-
-	A semver prerelease will be converted into a
-	prerelease of PyPI.
-	A semver build will be converted into a development
-	part of PyPI
-	:param semver.Version ver: the semver version
-	:return: a PyPI version
-	"""
-	ver = semantic_version.Version(version)
-	prerelease = ver.prerelease if ver.prerelease else ""
-	build = ver.build if ver.build else ""
-	return Version(f"{v}{prerelease}{build}")
 
 
 def get_fullname(user=None):
