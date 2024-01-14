@@ -1,11 +1,20 @@
 const path = require("path");
 const fs = require("fs");
 const chalk = require("chalk");
-
-const frappe_path = path.resolve(__dirname, "..");
-const bench_path = path.resolve(frappe_path, "..", "..");
+let bench_path;
+if (process.env.FRAPPE_BENCH_ROOT) {
+	bench_path = process.env.FRAPPE_BENCH_ROOT;
+} else {
+	const frappe_path = path.resolve(__dirname, "..");
+	bench_path = path.resolve(frappe_path, "..", "..");
+}
+let apps_path;
+if (process.env.FRAPPE_APPS_ROOT) {
+	apps_path = process.env.FRAPPE_APPS_ROOT;
+} else {
+	apps_path = path.resolve(bench_path, "apps");
+}
 const sites_path = path.resolve(bench_path, "sites");
-const apps_path = path.resolve(bench_path, "apps");
 const assets_path = path.resolve(sites_path, "assets");
 const app_list = get_apps_list();
 
