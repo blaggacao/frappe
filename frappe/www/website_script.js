@@ -19,12 +19,25 @@ ga('send', 'pageview');
 {% if enable_view_tracking %}
 
 	window.frappe.track = (event_name) => { // TODO: add similar, optimized utility to frappe/builder
-    		if (navigator.doNotTrack == 1 || window.is_404):
+ 		if (navigator.doNotTrack == 1 || window.is_404) {
 			return
+		};
 
-		let browser = frappe.utils.get_browser();
-		let query_params = frappe.utils.get_query_params();
+    function getMetaTags() {
+      const m = {},
+          tt = document.getElementsByTagName('meta');
+      tt.forEach(t => {
+          const [k, v] = ((t.getAttribute('name') || t.getAttribute('property') || t.getAttribute('http-equiv')), t.getAttribute('content'));
+          m[k] = v
+      });
+      return m
+    }
 
+
+    let b = frappe.utils.get_browser(),
+        q = frappe.utils.get_query_params(),
+        c = frappe.get_cookies(),
+        m = getMetaTags();
 		// Get visitor ID based on browser uniqueness
 		import('https://openfpcdn.io/fingerprintjs/v3')
 			.then(fingerprint_js => fingerprint_js.load())
@@ -33,14 +46,20 @@ ga('send', 'pageview');
 				frappe.call("frappe.website.log_event", {
 					event_name: event_name,
 					referrer: document.referrer,
-					browser: browser.name,
-					version: browser.version,
+					browser: b.name,
+					version: b.version,
 					user_tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-					source: query_params.source || query_params.utm_source,
-					medium: query_params.medium || query_params.utm_medium,
-					campaign: query_params.campaign || query_params.utm_campaign,
-					content: query_params.content || query_params.utm_content,
-					visitor_id: result.visitorId
+					source: q.source || q.utm_source,
+					medium: q.medium || q.utm_medium,
+					campaign: q.campaign || q.utm_campaign,
+					content: q.content || q.utm_content,
+					visitor_id: result.visitorId,
+	{%- if tracking_data_capture_js -%}
+          data: function() {
+              {{ tracking_data_capture_js }}
+              return r
+          }
+	{%- endif -%}
 				})
 		})
 	};

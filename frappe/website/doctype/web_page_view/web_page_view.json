@@ -17,7 +17,8 @@
   "campaign",
   "medium",
   "visitor_id",
-  "content"
+  "content",
+  "extra_data"
  ],
  "fields": [
   {
@@ -89,11 +90,17 @@
    "fieldtype": "Data",
    "label": "Content",
    "read_only": 1
+  },
+  {
+   "fieldname": "extra_data",
+   "fieldtype": "Code",
+   "label": "Extra Data",
+   "read_only": 1
   }
  ],
  "in_create": 1,
  "links": [],
- "modified": "2024-03-23 16:04:02.743377",
+ "modified": "2024-01-19 15:47:49.681378",
  "modified_by": "Administrator",
  "module": "Website",
  "name": "Web Page View",
