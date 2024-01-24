@@ -12,6 +12,7 @@
   "address_type",
   "address_line1",
   "address_line2",
+  "address_line3",
   "pincode",
   "city",
   "county",
@@ -171,12 +172,18 @@
    "fieldname": "set_location_reviewed",
    "fieldtype": "Button",
    "label": "Location is ok \u2714"
+  },
+  {
+   "fieldname": "address_line3",
+   "fieldtype": "Data",
+   "label": "Address Line 3",
+   "read_only": 1
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2023-10-21 08:15:06.968040",
+ "modified": "2024-01-24 14:15:55.650509",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",

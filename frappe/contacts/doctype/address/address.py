@@ -136,6 +136,22 @@ class Address(Document):
 		)
 		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
 		self.location_reviewed = False
+
+		line3, zipcode = [], None
+		for address_component in geocode["address_components"]:
+			if list(
+				set(address_component["types"])
+				& {"neighborhood", "sublocality", "administrative_area_level_3"}
+			):
+				line3.append(address_component["short_name"])
+			if list(set(address_component["types"]) & {"postal_code"}):
+				zipcode = address_component["long_name"]
+
+		if line3:
+			self.address_line3 = ", ".join(line3)
+		if zipcode:
+			self.pincode = zipcode
+
 		self.save()
 
 	@frappe.whitelist()
@@ -158,6 +174,9 @@ class Address(Document):
 			"administrative_area": self.city,
 			"country": self.country,
 		}
+
+		if self.pincode:
+			components["postal_code"] = self.pincode
 
 		try:
 			geocodes = maps_client.geocode(self.address_line1, components=components)
