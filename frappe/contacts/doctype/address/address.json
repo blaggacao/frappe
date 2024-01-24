@@ -54,12 +54,14 @@
   {
    "fieldname": "address_line1",
    "fieldtype": "Data",
+   "in_preview": 1,
    "label": "Address Line 1",
    "reqd": 1
   },
   {
    "fieldname": "address_line2",
    "fieldtype": "Data",
+   "in_preview": 1,
    "label": "Address Line 2"
   },
   {
@@ -67,6 +69,7 @@
    "fieldtype": "Data",
    "in_global_search": 1,
    "in_list_view": 1,
+   "in_preview": 1,
    "label": "City/Town",
    "reqd": 1,
    "search_index": 1
@@ -96,6 +99,8 @@
   {
    "fieldname": "pincode",
    "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_preview": 1,
    "label": "Postal Code",
    "search_index": 1
   },
@@ -176,6 +181,7 @@
   {
    "fieldname": "address_line3",
    "fieldtype": "Data",
+   "in_preview": 1,
    "label": "Address Line 3",
    "read_only": 1
   }
@@ -183,7 +189,7 @@
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2024-01-24 14:15:55.650509",
+ "modified": "2024-01-24 17:00:06.544939",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
@@ -244,6 +250,7 @@
   }
  ],
  "search_fields": "country, state",
+ "show_preview_popup": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []
