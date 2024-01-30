@@ -361,6 +361,8 @@ class BackupGenerator:
 			n.write(c.read())
 
 	def take_dump(self):
+		import shlex
+
 		import frappe.utils
 		from frappe.utils.change_log import get_app_branch
 
@@ -407,15 +409,15 @@ class BackupGenerator:
 		extra = []
 		if self.db_type == "mariadb":
 			if self.backup_includes:
-				extra.extend([f"'{x}'" for x in self.backup_includes])
+				extra.extend(self.backup_includes)
 			elif self.backup_excludes:
-				extra.extend([f"--ignore-table='{self.db_name}.{table}'" for table in self.backup_excludes])
+				extra.extend([f"--ignore-table={self.db_name}.{table}" for table in self.backup_excludes])
 
 		elif self.db_type == "postgres":
 			if self.backup_includes:
-				extra.extend([f"--table='public.\"{table}\"'" for table in self.backup_includes])
+				extra.extend([f'--table=public."{table}"' for table in self.backup_includes])
 			elif self.backup_excludes:
-				extra.extend([f"--exclude-table-data='public.\"{table}\"'" for table in self.backup_excludes])
+				extra.extend([f'--exclude-table-data=public."{table}"' for table in self.backup_excludes])
 
 		from frappe.database import get_command
 
@@ -436,10 +438,13 @@ class BackupGenerator:
 			)
 		cmd.append(bin)
 		cmd.extend(args)
-
-		command = " ".join(wrap(cmd))
 		if self.verbose:
-			print(command.replace(frappe.utils.esc(self.password, "$ "), "*" * 10) + "\n")
+			command = " ".join(wrap([shlex.join([p.replace(self.password, "*" * 10) for p in cmd])]))
+			print(command + "\n")
+
+		# do not shell escape the pipes in the wrapper
+		# only shell escape the inner command
+		command = " ".join(wrap([shlex.join(cmd)]))
 
 		frappe.utils.execute_in_shell(command, low_priority=True, check_exit_code=True)
 

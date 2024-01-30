@@ -51,6 +51,7 @@ class DbManager:
 
 	@staticmethod
 	def restore_database(verbose, target, source, user, password):
+		import shlex
 		from shutil import which
 
 		from frappe.database import get_command
@@ -81,6 +82,6 @@ class DbManager:
 				exc=frappe.ExecutableNotFound,
 			)
 		command.append(bin)
-		command.extend(args)
+		command.append(shlex.join(args))
 		command.extend(source)
 		execute_in_shell(" ".join(command), check_exit_code=True, verbose=verbose)
