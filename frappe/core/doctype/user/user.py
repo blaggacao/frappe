@@ -54,13 +54,13 @@ class User(Document):
 		api_key: DF.Data | None
 		api_secret: DF.Password | None
 		banner_image: DF.AttachImage | None
-		bio: DF.Text | None
+		bio: DF.SmallText | None
 		birth_date: DF.Date | None
 		block_modules: DF.Table[BlockModule]
 		bypass_restrict_ip_check_if_2fa_enabled: DF.Check
 		defaults: DF.Table[DefaultValue]
-		desk_theme: DF.Literal["Light", "Dark", "Automatic"]
-		document_follow_frequency: DF.Literal["Hourly", "Daily", "Weekly"]
+		desk_theme: DF.Literal['Light', 'Dark', 'Automatic']
+		document_follow_frequency: DF.Literal['Hourly', 'Daily', 'Weekly']
 		document_follow_notify: DF.Check
 		email: DF.Data
 		email_signature: DF.SmallText | None
@@ -87,6 +87,7 @@ class User(Document):
 		login_after: DF.Int
 		login_before: DF.Int
 		logout_all_sessions: DF.Check
+		matrix_id: DF.Data | None
 		middle_name: DF.Data | None
 		mobile_no: DF.Data | None
 		module_profile: DF.Link | None
@@ -111,6 +112,7 @@ class User(Document):
 		user_type: DF.Link | None
 		username: DF.Data | None
 	# end: auto-generated types
+
 	__new_password = None
 
 	def __setup__(self):

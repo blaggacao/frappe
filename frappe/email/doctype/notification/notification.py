@@ -10,6 +10,7 @@ from frappe import _
 from frappe.core.doctype.role.role import get_info_based_on_role, get_user_info
 from frappe.core.doctype.sms_settings.sms_settings import send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
+from frappe.integrations.doctype.matrix_settings.matrix_settings import send_matrix
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
@@ -25,31 +26,19 @@ class Notification(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.email.doctype.notification_recipient.notification_recipient import (
-			NotificationRecipient,
-		)
+		from frappe.email.doctype.notification_recipient.notification_recipient import NotificationRecipient
 		from frappe.types import DF
 
 		attach_print: DF.Check
-		channel: DF.Literal["Email", "Slack", "System Notification", "SMS"]
+		channel: DF.Literal["Email", "Slack", "System Notification", "SMS", "WhatsApp", "Matrix"]
 		condition: DF.Code | None
 		date_changed: DF.Literal
 		days_in_advance: DF.Int
 		document_type: DF.Link
 		enabled: DF.Check
-		event: DF.Literal[
-			"",
-			"New",
-			"Save",
-			"Submit",
-			"Cancel",
-			"Days After",
-			"Days Before",
-			"Value Change",
-			"Method",
-			"Custom",
-		]
+		event: DF.Literal['', 'New', 'Save', 'Submit', 'Cancel', 'Days After', 'Days Before', 'Value Change', 'Method', 'Custom']
 		is_standard: DF.Check
+		matrix_room: DF.Data | None
 		message: DF.Code | None
 		method: DF.Data | None
 		module: DF.Link | None
@@ -196,6 +185,9 @@ def get_context(context):
 
 			if self.channel == "WhatsApp":
 				self.send_whatsapp(doc, context)
+
+			if self.channel == "Matrix":
+				self.send_matrix(doc, context)
 
 			if self.channel == "System Notification" or self.send_system_notification:
 				self.create_system_notification(doc, context)
@@ -359,6 +351,20 @@ def get_context(context):
 				).insert(ignore_permissions=True)
 				message.send()
 
+	def send_matrix(self, doc, context):
+		user = frappe.get_value("User", doc.modified_by or doc.owner, "matrix_id")
+		if not user:
+			self.log_error(
+				f"User '{doc.modified_by or doc.owner}' has no 'matrix_id' configured, but was selected as sender for a Matrix notification on {doc}"
+			)
+			return
+		msg = frappe.utils.strip_html_tags(frappe.render_template(self.message, context))
+		formatted_msg = frappe.render_template(self.message, context)
+		recipients = self.get_list_of_recipients_matrix(doc, context)
+		send_matrix(
+			msg=msg, formatted_msg=formatted_msg, user=user, recipients=recipients, room_id=self.matrix_room
+		)
+
 	def get_list_of_recipients(self, doc, context):
 		recipients = []
 		cc = []
@@ -396,6 +402,45 @@ def get_context(context):
 			recipients = recipients + get_assignees(doc)
 
 		return list(set(recipients)), list(set(cc)), list(set(bcc))
+
+	def get_list_of_recipients_matrix(self, doc, context):
+		recipients = []
+		for recipient in self.recipients:
+			if recipient.condition:
+				if not frappe.safe_eval(recipient.condition, None, context):
+					continue
+			if recipient.receiver_by_document_field:
+				user_field = recipient.receiver_by_document_field
+				user = doc.get(user_field)
+				matrix_id = frappe.get_value("User", user, "matrix_id")
+				if not matrix_id:
+					self.log_error(_("User {0} has no Matrix ID set").format(user))
+				else:
+					recipients.append(matrix_id)
+
+			# For sending emails to specified role
+			if recipient.receiver_by_role:
+				matrix_ids = get_info_based_on_role(
+					recipient.receiver_by_role, "matrix_id", ignore_permissions=True
+				)
+
+				for matrix_id in matrix_ids:
+					if not matrix_id:
+						self.log_error(
+							_("One user by role '{0}' has no Matrix ID set").format(recipient.receiver_by_role)
+						)
+					else:
+						recipients.append(matrix_id)
+
+		if self.send_to_all_assignees:
+			for assignee in get_assignees(doc):
+				matrix_id = frappe.get_value("User", assignee, "matrix_id")
+				if not matrix_id:
+					self.log_error(_("Assignee '{0}' has no Matrix ID set").format(assignee))
+				else:
+					recipients.append(matrix_id)
+
+		return list(set(recipients))
 
 	def get_receiver_list(self, doc, context):
 		"""return receiver list based on the doc field and role specified"""

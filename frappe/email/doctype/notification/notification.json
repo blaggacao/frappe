@@ -11,6 +11,7 @@
   "column_break_2",
   "channel",
   "slack_webhook_url",
+  "matrix_room",
   "filters",
   "subject",
   "document_type",
@@ -60,7 +61,7 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "Email\nSlack\nSystem Notification\nSMS\nWhatsApp",
+   "options": "Email\nSlack\nSystem Notification\nSMS\nWhatsApp\nMatrix",
    "reqd": 1,
    "set_only_once": 1
   },
@@ -277,15 +278,23 @@
    "fieldname": "send_to_all_assignees",
    "fieldtype": "Check",
    "label": "Send To All Assignees"
+  },
+  {
+   "depends_on": "eval:doc.channel=='Matrix'",
+   "description": "Use either alias<sup>1</sup> or canonical<sup>2</sup> notation.<br><sup>1</sup>&ensp;<code>#twim:matrix.org</code>\n<br><sup>2</sup>&ensp;<code>!xYvNcQPhnkrdUmYczI:matrix.org</code>",
+   "fieldname": "matrix_room",
+   "fieldtype": "Data",
+   "label": "Matrix Room"
   }
  ],
  "icon": "fa fa-envelope",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-05-04 11:17:11.882314",
+ "modified": "2024-01-31 14:29:55.085222",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Notification",
+ "naming_rule": "Set by user",
  "owner": "Administrator",
  "permissions": [
   {
@@ -301,6 +310,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "subject",
  "track_changes": 1
 }

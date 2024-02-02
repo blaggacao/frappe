@@ -70,6 +70,12 @@ frappe.notification = {
 				receiver_fields = $.map(fields, function (d) {
 					return d.options == "Phone" ? get_select_options(d) : null;
 				});
+			} else if (["Matrix"].includes(frm.doc.channel)) {
+				receiver_fields = $.map(fields, function (d) {
+					return d.options == "User" && d.fieldtype == "Link"
+						? get_select_options(d)
+						: null;
+				});
 			}
 
 			// set email recipient options
@@ -102,7 +108,7 @@ Last comment: {{ comments[-1].comment }} by {{ comments[-1].by }}
 &lt;/ul&gt;
 </pre>
 			`;
-		} else if (in_list(["Slack", "System Notification", "SMS", "WhatsApp"], frm.doc.channel)) {
+		} else if (["Slack", "System Notification", "SMS", "Matrix"].includes(frm.doc.channel)) {
 			template = `<h5>Message Example</h5>
 
 <pre>*Order Overdue*

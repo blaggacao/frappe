@@ -43,6 +43,7 @@
   "bio",
   "column_break_22",
   "mobile_no",
+  "matrix_id",
   "settings_tab",
   "desk_settings_section",
   "mute_sounds",
@@ -700,6 +701,12 @@
    "fieldtype": "Small Text",
    "hidden": 1,
    "label": "Onboarding Status"
+  },
+  {
+   "description": "e.g. @myname:matrix.org",
+   "fieldname": "matrix_id",
+   "fieldtype": "Data",
+   "label": "Matrix ID"
   }
  ],
  "icon": "fa fa-user",
@@ -762,7 +769,7 @@
    "link_fieldname": "user"
   }
  ],
- "modified": "2023-06-05 17:26:04.127555",
+ "modified": "2024-02-01 06:17:51.358735",
  "modified_by": "Administrator",
  "module": "Core",
  "name": "User",
