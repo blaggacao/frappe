@@ -351,12 +351,30 @@ def get_context(context):
 				f"User '{doc.modified_by or doc.owner}' has no 'matrix_id' configured, but was selected as sender for a Matrix notification on {doc}"
 			)
 			return
-		msg = frappe.utils.strip_html_tags(frappe.render_template(self.message, context))
-		formatted_msg = frappe.render_template(self.message, context)
 		recipients = self.get_list_of_recipients_matrix(doc, context)
-		send_matrix(
-			msg=msg, formatted_msg=formatted_msg, user=user, recipients=recipients, room_id=self.matrix_room
-		)
+
+		def get_chunks(s):
+			start = 0
+			end = 0
+			pattern = r"―――+"
+			for match in re.finditer(pattern, s):
+				end = match.start()
+				yield s[start:end]
+				end = match.end()
+				start = end + 1
+			yield s[start:]
+
+		chunks = get_chunks(frappe.render_template(self.message, context))
+		for chunk in chunks:
+			msg = frappe.utils.strip_html_tags(chunk)
+			formatted_msg = chunk
+			send_matrix(
+				msg=msg,
+				formatted_msg=formatted_msg,
+				user=user,
+				recipients=recipients,
+				room_id=self.matrix_room,
+			)
 
 	def get_list_of_recipients(self, doc, context):
 		recipients = []
