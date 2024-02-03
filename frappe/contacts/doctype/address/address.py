@@ -127,6 +127,8 @@ class Address(Document):
 		from frappe.geo import utils
 
 		geocode = self.fetch_geocode()
+		if not geocode:
+			return
 		data = frappe._dict(
 			{
 				"name": self.name,
