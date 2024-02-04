@@ -410,6 +410,26 @@ def get_context(context):
 			return matrix_id
 
 		recipients = self.get_receiver_list(doc, context, "matrix_id", get_matrix_id)
+		base_message = frappe.render_template(self.message, context)
+
+		if doc.doctype != "Communication":
+			comm = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"content": base_message,
+					"sender": doc.modified_by or doc.owner,
+					"recipients": "\n".join(recipients),
+					"communication_medium": "Chat",
+					"sent_or_received": "Sent",
+					"reference_doctype": doc.doctype,
+					"reference_name": doc.name,
+					"has_attachment": 0,
+					"communication_type": "Automated Message",
+				}
+			)
+			comm.flags.skip_add_signature = True
+			comm.insert(ignore_permissions=True)
+
 		def get_chunks(s):
 			start = 0
 			end = 0
@@ -421,7 +441,7 @@ def get_context(context):
 				start = end + 1
 			yield s[start:]
 
-		chunks = get_chunks(frappe.render_template(self.message, context))
+		chunks = get_chunks(base_message)
 		for chunk in chunks:
 			msg = frappe.utils.strip_html_tags(chunk)
 			formatted_msg = chunk
