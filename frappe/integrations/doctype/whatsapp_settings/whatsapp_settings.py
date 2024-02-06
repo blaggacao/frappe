@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import base64
+from contextlib import closing
 from io import BytesIO
 
 import qrcode
@@ -68,6 +69,6 @@ def send_whatsapp(msg, recipients=None):
 	# if not whatsapp.is_connected:
 	# 	frappe.throw(_("Please initialize WhatsApp Settings via the device linking QR code"))
 
-	chat = WhatsApp()
-	for recp in recipients:
-		chat.send_message(phone=recp, message=msg)
+	with closing(WhatsApp()) as chat:
+		for recp in recipients:
+			chat.send_message(phone=recp, message=msg)

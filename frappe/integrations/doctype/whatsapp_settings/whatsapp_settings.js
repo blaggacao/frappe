@@ -17,12 +17,12 @@ frappe.ui.form.on("WhatsApp Settings", {
 					setTimeout(() => {
 						frm.dashboard.set_headline("");
 					}, 31000);
-					var timeleft = 30;
+					var timeleft = 55;
 					var waitTimer = setInterval(function () {
 						if (timeleft <= 0) {
 							clearInterval(waitTimer);
 						}
-						document.getElementById("progressBar").value = 30 - timeleft;
+						document.getElementById("progressBar").value = 55 - timeleft;
 						timeleft -= 1;
 					}, 1000);
 				} else {
