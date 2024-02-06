@@ -72,7 +72,7 @@ frappe.notification = {
 			} else if (["WhatsApp", "SMS"].includes(frm.doc.channel)) {
 				receiver_fields = find_receiver_fields(function (df) {
 					return df.options == "Phone" || df.options == "Mobile";
-					});
+				});
 			} else if (["Matrix"].includes(frm.doc.channel)) {
 				receiver_fields = find_receiver_fields(function (df) {
 					return df.options == "Matrix";
@@ -205,7 +205,7 @@ frappe.ui.form.on("Notification", {
 			frm.set_df_property(
 				"channel",
 				"description",
-				`To use WhatsApp, initialize <a href="/app/waba-settings">WABA Settings</a>.`
+				`To use WhatsApp, initialize <a href="/app/whatsapp-settings">WhatsApp Settings</a>.`
 			);
 		} else {
 			frm.set_df_property("channel", "description", ` `);

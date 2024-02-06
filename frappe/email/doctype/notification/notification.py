@@ -12,6 +12,7 @@ from frappe.core.doctype.sms_settings.sms_settings import send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.integrations.doctype.matrix_settings.matrix_settings import send_matrix
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
+from frappe.integrations.doctype.whatsapp_settings.whatsapp_settings import send_whatsapp
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
 from frappe.utils import add_to_date, cast, nowdate, validate_email_address
@@ -28,7 +29,9 @@ class Notification(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.email.doctype.notification_recipient.notification_recipient import NotificationRecipient
+		from frappe.email.doctype.notification_recipient.notification_recipient import (
+			NotificationRecipient,
+		)
 		from frappe.types import DF
 
 		attach_print: DF.Check
@@ -38,7 +41,18 @@ class Notification(Document):
 		days_in_advance: DF.Int
 		document_type: DF.Link
 		enabled: DF.Check
-		event: DF.Literal['', 'New', 'Save', 'Submit', 'Cancel', 'Days After', 'Days Before', 'Value Change', 'Method', 'Custom']
+		event: DF.Literal[
+			"",
+			"New",
+			"Save",
+			"Submit",
+			"Cancel",
+			"Days After",
+			"Days Before",
+			"Value Change",
+			"Method",
+			"Custom",
+		]
 		is_standard: DF.Check
 		matrix_room: DF.Data | None
 		message: DF.Code | None
@@ -343,44 +357,45 @@ def get_context(context):
 				)
 			return phone_no
 
-		for receiver in self.get_receiver_list(doc, context, "mobile_no", get_phone_no):
-			receiver = re.sub(r"[^0-9]", "", receiver)
-			if frappe.db.exists("WABA WhatsApp Contact", receiver):
-				contact = frappe.get_doc("WABA WhatsApp Contact", receiver)
-			else:
-				display_name = receiver
-				contacts = frappe.get_all("Contact", filters={"mobile_no": receiver}, fields=["name"])
-				if len(contacts) == 1:
-					display_name = contacts[0].get("name")
-				contact = frappe.get_doc(
-					doctype="WABA WhatsApp Contact",
-					whatsapp_id=receiver,
-					display_name=display_name,
-				).insert(ignore_permissions=True)
-			message_body = frappe.render_template(self.message, context)
+		message_body = frappe.render_template(self.message, context)
 
-			def get_chunks(s):
-				start = 0
-				end = 0
-				pattern = r"―――+"
-				for match in re.finditer(pattern, s):
-					end = match.start()
-					yield s[start:end]
-					end = match.end()
-					start = end + 1
-				yield s[start:]
+		recipients = self.get_receiver_list(doc, context, "mobile_no", get_phone_no)
+		if doc.doctype != "Communication":
+			comm = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"content": message_body,
+					"sender": doc.modified_by or doc.owner,
+					"recipients": "\n".join(recipients),
+					"communication_medium": "Chat",
+					"sent_or_received": "Sent",
+					"reference_doctype": doc.doctype,
+					"reference_name": doc.name,
+					"has_attachment": 0,
+					"communication_type": "Automated Message",
+				}
+			)
+			comm.flags.skip_add_signature = True
+			comm.insert(ignore_permissions=True)
 
-			chunks = get_chunks(message_body)
-			for chunk in chunks:
-				message = frappe.get_doc(
-					doctype="WABA WhatsApp Message",
-					status="Pending",
-					type="Outgoing",
-					message_type="Text",
-					message_body=chunk,
-					to=contact.name,
-				).insert(ignore_permissions=True)
-				message.send()
+		def get_chunks(s):
+			start = 0
+			end = 0
+			pattern = r"―――+"
+			for match in re.finditer(pattern, s):
+				end = match.start()
+				yield s[start:end]
+				end = match.end()
+				start = end + 1
+			yield s[start:]
+
+		chunks = get_chunks(message_body)
+		for chunk in chunks:
+			msg = frappe.utils.strip_html_tags(chunk)
+			send_whatsapp(
+				msg=msg,
+				recipients=recipients,
+			)
 
 	def send_matrix(self, doc, context):
 		user = frappe.get_value("User", doc.modified_by or doc.owner, "matrix_id")
