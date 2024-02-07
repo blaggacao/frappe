@@ -123,6 +123,19 @@ class Address(Document):
 		pass
 
 	@frappe.whitelist()
+	def set_coordinates(self):
+		import shapely
+
+		fc = shapely.from_geojson(self.location)
+		if not fc:
+			return
+		p = fc.centroid
+
+		self.latitude = p.y
+		self.longitude = p.x
+		self.save()
+
+	@frappe.whitelist()
 	def set_location(self):
 		from frappe.geo import utils
 
@@ -136,6 +149,8 @@ class Address(Document):
 				"longitude": geocode["geometry"]["location"]["lng"],
 			}
 		)
+		self.longitude = data.longitude
+		self.latitude = data.latitude
 		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
 		self.location_reviewed = False
 

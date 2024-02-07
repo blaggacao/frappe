@@ -20,6 +20,8 @@
   "country",
   "column_break0",
   "location",
+  "longitude",
+  "latitude",
   "set_location_reviewed",
   "location_reviewed",
   "email_id",
@@ -112,14 +114,12 @@
   {
    "fieldname": "email_id",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Email Address",
    "options": "Email"
   },
   {
    "fieldname": "phone",
    "fieldtype": "Data",
-   "hidden": 1,
    "label": "Phone"
   },
   {
@@ -184,12 +184,24 @@
    "in_preview": 1,
    "label": "Address Line 3",
    "read_only": 1
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Longitude"
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Latitude"
   }
  ],
  "icon": "fa fa-map-marker",
  "idx": 5,
  "links": [],
- "modified": "2024-01-24 17:00:06.544939",
+ "modified": "2024-02-07 15:23:51.712887",
  "modified_by": "Administrator",
  "module": "Contacts",
  "name": "Address",
