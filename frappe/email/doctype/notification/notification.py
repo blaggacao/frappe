@@ -289,7 +289,7 @@ def get_context(context):
 		# Add mail notification to communication list
 		# No need to add if it is already a communication.
 		if doc.doctype != "Communication":
-			make_communication(
+			communication = make_communication(
 				doctype=doc.doctype,
 				name=doc.name,
 				content=message,
@@ -302,7 +302,10 @@ def get_context(context):
 				cc=cc,
 				bcc=bcc,
 				communication_type="Automated Message",
-			)
+			).get("name")
+			# set the outgoing email account because we did in fact send it via sendmail above
+			comm = frappe.get_doc("Communication", communication)
+			comm.get_outgoing_email_account()
 
 	def send_a_slack_msg(self, doc, context):
 		send_slack_message(
