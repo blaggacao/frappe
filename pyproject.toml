@@ -6,7 +6,7 @@ authors = [
 description = "Metadata driven, full-stack low code web framework"
 requires-python = ">=3.10"
 readme = "README.md"
-version = "15.0.0-dev0+2024-2-7"
+version = "15.0.0-dev0+2024-2-8"
 dependencies = [
     # core dependencies
     "Babel~=2.12.1",
