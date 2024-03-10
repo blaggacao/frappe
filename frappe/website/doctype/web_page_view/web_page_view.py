@@ -48,6 +48,7 @@ def make_view_log(
 	source=None,
 	campaign=None,
 	medium=None,
+	content=None,
 	visitor_id=None,
 ):
 	if not is_tracking_enabled():
@@ -86,6 +87,7 @@ def make_view_log(
 	view.source = source
 	view.campaign = campaign
 	view.medium = (medium or "").lower()
+	view.content = content
 	view.visitor_id = visitor_id
 
 	try:

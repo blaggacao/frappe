@@ -90,6 +90,7 @@ class User(Document):
 		login_after: DF.Int
 		login_before: DF.Int
 		logout_all_sessions: DF.Check
+		matrix_id: DF.Data | None
 		middle_name: DF.Data | None
 		mobile_no: DF.Data | None
 		module_profile: DF.Link | None
@@ -114,6 +115,7 @@ class User(Document):
 		user_type: DF.Link | None
 		username: DF.Data | None
 	# end: auto-generated types
+
 	__new_password = None
 
 	def __setup__(self):

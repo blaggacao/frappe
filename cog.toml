@@ -1,0 +1,4 @@
+[commit_types]
+perm = { changelog_title = "Permisos" }
+field = { changelog_title = "Campos" }
+view = { changelog_title = "Formularios" }

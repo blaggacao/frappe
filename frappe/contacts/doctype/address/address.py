@@ -1,6 +1,8 @@
 # Copyright (c) 2015, Frappe Technologies and contributors
 # License: MIT. See LICENSE
 
+import json
+
 from jinja2 import TemplateSyntaxError
 
 import frappe
@@ -116,6 +118,90 @@ class Address(Document):
 
 		return False
 
+	def before_insert(self):
+		# self.set_location()
+		pass
+
+	@frappe.whitelist()
+	def set_coordinates(self):
+		import shapely
+
+		fc = shapely.from_geojson(self.location)
+		if not fc:
+			return
+		p = fc.centroid
+
+		self.latitude = p.y
+		self.longitude = p.x
+		self.save()
+
+	@frappe.whitelist()
+	def set_location(self):
+		from frappe.geo import utils
+
+		geocode = self.fetch_geocode()
+		if not geocode:
+			return
+		data = frappe._dict(
+			{
+				"name": self.name,
+				"latitude": geocode["geometry"]["location"]["lat"],
+				"longitude": geocode["geometry"]["location"]["lng"],
+			}
+		)
+		self.longitude = data.longitude
+		self.latitude = data.latitude
+		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
+		self.location_reviewed = False
+
+		line3, zipcode = [], None
+		for address_component in geocode["address_components"]:
+			if list(
+				set(address_component["types"])
+				& {"neighborhood", "sublocality", "administrative_area_level_3"}
+			):
+				line3.append(address_component["short_name"])
+			if list(set(address_component["types"]) & {"postal_code"}):
+				zipcode = address_component["long_name"]
+
+		if line3:
+			self.address_line3 = ", ".join(line3)
+		if zipcode:
+			self.pincode = zipcode
+
+		self.save()
+
+	@frappe.whitelist()
+	def set_location_reviewed(self):
+		self.location_reviewed = True
+		self.save()
+
+	def fetch_geocode(self):
+		if not frappe.db.get_single_value("Google Settings", "api_key"):
+			frappe.throw(_("Enter API key in Google Settings."))
+
+		import googlemaps
+
+		try:
+			maps_client = googlemaps.Client(key=frappe.db.get_single_value("Google Settings", "api_key"))
+		except Exception as e:
+			frappe.throw(e)
+
+		components = {
+			"administrative_area": self.city,
+			"country": self.country,
+		}
+
+		if self.pincode:
+			components["postal_code"] = self.pincode
+
+		try:
+			geocodes = maps_client.geocode(self.address_line1, components=components)
+		except Exception as e:
+			frappe.throw(_(str(e)))
+
+		return geocodes[0] if geocodes else False
+
 
 def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 	if preferred_key in ["is_shipping_address", "is_primary_address"]:
@@ -137,6 +223,14 @@ def get_preferred_address(doctype, name, preferred_key="is_primary_address"):
 			return address[0].name
 
 	return
+
+
+@frappe.whitelist()
+def set_location_reviewed(docname, location=None):
+	address = frappe.get_doc("Address", docname)
+	if location:
+		address.location = location
+	address.set_location_reviewed()
 
 
 @frappe.whitelist()

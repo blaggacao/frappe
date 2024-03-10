@@ -43,6 +43,7 @@
   "bio",
   "column_break_22",
   "mobile_no",
+  "matrix_id",
   "settings_tab",
   "desk_settings_section",
   "mute_sounds",
@@ -702,6 +703,12 @@
    "fieldtype": "Small Text",
    "hidden": 1,
    "label": "Onboarding Status"
+  },
+  {
+   "description": "e.g. @myname:matrix.org",
+   "fieldname": "matrix_id",
+   "fieldtype": "Data",
+   "label": "Matrix ID"
   }
  ],
  "icon": "fa fa-user",

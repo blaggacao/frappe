@@ -16,6 +16,31 @@ frappe.ui.form.on("Address", {
 					link_name: frappe.dynamic_link.doc[frappe.dynamic_link.fieldname],
 				});
 			}
+		} else {
+			if (!frm.doc.location_reviewed) {
+				frm.add_custom_button(__("Fetch Location"), () => {
+					if (!frm.doc.country) {
+						frappe.throw(
+							__("Cannot fetch longitude and latitude if country is missing.")
+						);
+					}
+					if (!frm.doc.city) {
+						frappe.throw(
+							__("Cannot fetch longitude and latitude if city is missing.")
+						);
+					}
+					frappe.show_alert({
+						message: "Fetching Longitude & Latitude",
+						indicator: "orange",
+					});
+					frm.call("set_location", {}, () => {
+						frm.reload_doc();
+					});
+				});
+				frm.change_custom_button_type(__("Fetch Location"), null, "info");
+			} else {
+				frm.set_intro(__("Location has been manually reviewed"), "green");
+			}
 		}
 		frm.set_query("link_doctype", "links", function () {
 			return {
@@ -40,6 +65,11 @@ frappe.ui.form.on("Address", {
 				);
 			}
 		}
+	},
+	set_location_reviewed: function (frm) {
+		frm.call("set_location_reviewed", {}, () => {
+			frm.reload_doc();
+		});
 	},
 	validate: function (frm) {
 		// clear linked customer / supplier / sales partner on saving...

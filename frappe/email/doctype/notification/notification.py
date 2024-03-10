@@ -3,18 +3,23 @@
 
 import json
 import os
+import re
 
 import frappe
 from frappe import _
 from frappe.core.doctype.role.role import get_info_based_on_role, get_user_info
 from frappe.core.doctype.sms_settings.sms_settings import send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
+from frappe.integrations.doctype.matrix_settings.matrix_settings import send_matrix
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
+from frappe.integrations.doctype.whatsapp_settings.whatsapp_settings import send_whatsapp
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
-from frappe.utils import add_to_date, cast, is_html, nowdate, validate_email_address
+from frappe.utils import add_to_date, cast, nowdate, validate_email_address
 from frappe.utils.jinja import validate_template
 from frappe.utils.safe_exec import get_safe_globals
+
+FORMATS = {"HTML": ".html", "Markdown": ".md", "Plain Text": ".txt"}
 
 
 class Notification(Document):
@@ -30,7 +35,7 @@ class Notification(Document):
 		from frappe.types import DF
 
 		attach_print: DF.Check
-		channel: DF.Literal["Email", "Slack", "System Notification", "SMS"]
+		channel: DF.Literal["Email", "Slack", "System Notification", "SMS", "WhatsApp", "Matrix"]
 		condition: DF.Code | None
 		date_changed: DF.Literal[None]
 		days_in_advance: DF.Int
@@ -49,7 +54,9 @@ class Notification(Document):
 			"Custom",
 		]
 		is_standard: DF.Check
+		matrix_room: DF.Data | None
 		message: DF.Code | None
+		message_type: DF.Literal["Markdown", "HTML", "Plain Text"]
 		method: DF.Data | None
 		module: DF.Link | None
 		print_format: DF.Link | None
@@ -94,11 +101,11 @@ class Notification(Document):
 	def on_update(self):
 		frappe.cache.hdel("notifications", self.document_type)
 		path = export_module_json(self, self.is_standard, self.module)
-		if path:
-			# js
-			if not os.path.exists(path + ".md") and not os.path.exists(path + ".html"):
-				with open(path + ".md", "w") as f:
-					f.write(self.message)
+		if path and self.message:
+			extension = FORMATS.get(self.message_type, ".md")
+			file_path = path + extension
+			with open(file_path, "w") as f:
+				f.write(self.message)
 
 			# py
 			if not os.path.exists(path + ".py"):
@@ -168,7 +175,7 @@ def get_context(context):
 		"""Build recipients and send Notification"""
 
 		context = get_context(doc)
-		context = {"doc": doc, "alert": self, "comments": None}
+		context.update({"alert": self, "comments": None})
 		if doc.get("_comments"):
 			context["comments"] = json.loads(doc.get("_comments"))
 
@@ -183,6 +190,12 @@ def get_context(context):
 
 			if self.channel == "SMS":
 				self.send_sms(doc, context)
+
+			if self.channel == "WhatsApp":
+				self.send_whatsapp(doc, context)
+
+			if self.channel == "Matrix":
+				self.send_matrix(doc, context)
 
 			if self.channel == "System Notification" or self.send_system_notification:
 				self.create_system_notification(doc, context)
@@ -279,6 +292,9 @@ def get_context(context):
 				bcc=bcc,
 				communication_type="Automated Message",
 			).get("name")
+			# set the outgoing email account because we will in fact send it via sendmail below
+			comm = frappe.get_doc("Communication", communication)
+			comm.get_outgoing_email_account()
 
 		frappe.sendmail(
 			recipients=recipients,
@@ -304,10 +320,160 @@ def get_context(context):
 		)
 
 	def send_sms(self, doc, context):
+		def get_phone_no(d, field):
+			option = d.meta.get_field(field).options.strip()
+			if option == "Phone" or option == "Mobile":
+				phone_no = d.get(field)
+				if not phone_no:
+					self.log_error(_("Field {0} on document {1} has no Mobile No set").format(field, d.name))
+			elif option == "User":
+				user = d.get(field)
+				phone_no = frappe.get_value("User", user, "mobile_no")
+				if not phone_no:
+					self.log_error(_("User {0} has no Mobile No set").format(user))
+			else:
+				frappe.throw(
+					_("Field {0} on document {1} is neither a Mobile No data field nor a User link").format(
+						field, d.name
+					)
+				)
+			return phone_no
+
 		send_sms(
-			receiver_list=self.get_receiver_list(doc, context),
-			msg=frappe.render_template(self.message, context),
+			receiver_list=self.get_receiver_list(doc, context, "mobile_no", get_phone_no),
+			msg=frappe.utils.strip_html_tags(frappe.render_template(self.message, context)),
 		)
+
+	def send_whatsapp(self, doc, context):
+		def get_phone_no(d, field):
+			option = d.meta.get_field(field).options.strip()
+			if option == "Phone" or option == "Mobile":
+				phone_no = d.get(field)
+				if not phone_no:
+					self.log_error(_("Field {0} on document {1} has no Mobile No set").format(field, d.name))
+			elif option == "User":
+				user = d.get(field)
+				phone_no = frappe.get_value("User", user, "mobile_no")
+				if not phone_no:
+					self.log_error(_("User {0} has no Mobile No set").format(user))
+			else:
+				frappe.throw(
+					_("Field {0} on document {1} is neither a Mobile No data field nor a User link").format(
+						field, d.name
+					)
+				)
+			return phone_no
+
+		message_body = frappe.render_template(self.message, context)
+
+		recipients = self.get_receiver_list(doc, context, "mobile_no", get_phone_no)
+		if doc.doctype != "Communication":
+			comm = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"content": message_body,
+					"sender": doc.modified_by or doc.owner,
+					"recipients": "\n".join(recipients),
+					"communication_medium": "Chat",
+					"sent_or_received": "Sent",
+					"reference_doctype": doc.doctype,
+					"reference_name": doc.name,
+					"has_attachment": 0,
+					"communication_type": "Automated Message",
+				}
+			)
+			comm.flags.skip_add_signature = True
+			comm.insert(ignore_permissions=True)
+
+		def get_chunks(s):
+			start = 0
+			end = 0
+			pattern = r"―――+"
+			for match in re.finditer(pattern, s):
+				end = match.start()
+				yield s[start:end]
+				end = match.end()
+				start = end + 1
+			yield s[start:]
+
+		chunks = get_chunks(message_body)
+		for chunk in chunks:
+			msg = frappe.utils.strip_html_tags(chunk)
+			send_whatsapp(
+				msg=msg,
+				recipients=recipients,
+			)
+
+	def send_matrix(self, doc, context):
+		user = frappe.get_value("User", doc.modified_by or doc.owner, "matrix_id")
+		if not user:
+			self.log_error(
+				f"User '{doc.modified_by or doc.owner}' has no 'matrix_id' configured, but was selected as sender for a Matrix notification on {doc}"
+			)
+			return
+
+		def get_matrix_id(d, field):
+			option = d.meta.get_field(field).options.strip()
+			if option == "Matrix":
+				matrix_id = d.get(field)
+				if not matrix_id:
+					self.log_error(_("Field {0} on document {1} has no Matrix ID set").format(field, d.name))
+			elif option == "User":
+				user = d.get(field)
+				matrix_id = frappe.get_value("User", user, "matrix_id")
+				if not matrix_id:
+					self.log_error(_("User {0} has no Matrix ID set").format(user))
+			else:
+				frappe.throw(
+					_("Field {0} on document {1} is neither a Matrix data field nor a User link").format(
+						field, d.name
+					)
+				)
+			return matrix_id
+
+		recipients = self.get_receiver_list(doc, context, "matrix_id", get_matrix_id)
+		base_message = frappe.render_template(self.message, context)
+
+		if doc.doctype != "Communication":
+			comm = frappe.get_doc(
+				{
+					"doctype": "Communication",
+					"content": base_message,
+					"sender": doc.modified_by or doc.owner,
+					"recipients": "\n".join(recipients),
+					"communication_medium": "Chat",
+					"sent_or_received": "Sent",
+					"reference_doctype": doc.doctype,
+					"reference_name": doc.name,
+					"has_attachment": 0,
+					"communication_type": "Automated Message",
+				}
+			)
+			comm.flags.skip_add_signature = True
+			comm.insert(ignore_permissions=True)
+
+		def get_chunks(s):
+			start = 0
+			end = 0
+			pattern = r"―――+"
+			for match in re.finditer(pattern, s):
+				end = match.start()
+				yield s[start:end]
+				end = match.end()
+				start = end + 1
+			yield s[start:]
+
+		chunks = get_chunks(base_message)
+		for chunk in chunks:
+			msg = frappe.utils.strip_html_tags(chunk)
+			formatted_msg = chunk
+			send_matrix(
+				msg=msg,
+				formatted_msg=formatted_msg,
+				user=user,
+				recipients=recipients,
+				room_id=self.matrix_room,
+			)
 
 	def get_list_of_recipients(self, doc, context):
 		recipients = []
@@ -318,16 +484,17 @@ def get_context(context):
 				if not frappe.safe_eval(recipient.condition, None, context):
 					continue
 			if recipient.receiver_by_document_field:
-				fields = recipient.receiver_by_document_field.split(",")
-				# fields from child table
-				if len(fields) > 1:
-					for d in doc.get(fields[1]):
-						email_id = d.get(fields[0])
+				data_field, child_field = _parse_receiver_by_document_field(
+					recipient.receiver_by_document_field
+				)
+				if child_field:
+					for d in doc.get(child_field):
+						email_id = d.get(data_field)
 						if validate_email_address(email_id):
 							recipients.append(email_id)
-				# field from parent doc
+				# field from current doc
 				else:
-					email_ids_value = doc.get(fields[0])
+					email_ids_value = doc.get(data_field)
 					if validate_email_address(email_ids_value):
 						email_ids = email_ids_value.replace(",", "\n")
 						recipients = recipients + email_ids.split("\n")
@@ -347,7 +514,7 @@ def get_context(context):
 
 		return list(set(recipients)), list(set(cc)), list(set(bcc))
 
-	def get_receiver_list(self, doc, context):
+	def get_receiver_list(self, doc, context, user_field, field_extractor_func):
 		"""return receiver list based on the doc field and role specified"""
 		receiver_list = []
 		for recipient in self.recipients:
@@ -357,18 +524,28 @@ def get_context(context):
 
 			# For sending messages to the owner's mobile phone number
 			if recipient.receiver_by_document_field == "owner":
-				receiver_list += get_user_info([dict(user_name=doc.get("owner"))], "mobile_no")
+				receiver_list += get_user_info([dict(user_name=doc.get("owner"))], user_field)
 			# For sending messages to the number specified in the receiver field
 			elif recipient.receiver_by_document_field:
-				receiver_list.append(doc.get(recipient.receiver_by_document_field))
+				data_field, child_field = _parse_receiver_by_document_field(
+					recipient.receiver_by_document_field
+				)
+				if child_field:
+					for d in doc.get(child_field):
+						if recv := field_extractor_func(d, data_field):
+							receiver_list.append(recv)
+				# field from current doc
+				else:
+					if recv := field_extractor_func(doc, data_field):
+						receiver_list.append(recv)
 
 			# For sending messages to specified role
 			if recipient.receiver_by_role:
 				receiver_list += get_info_based_on_role(
-					recipient.receiver_by_role, "mobile_no", ignore_permissions=True
+					recipient.receiver_by_role, user_field, ignore_permissions=True
 				)
 
-		return receiver_list
+		return list(set(receiver_list))
 
 	def get_attachment(self, doc):
 		"""check print settings are attach the pdf"""
@@ -401,18 +578,26 @@ def get_context(context):
 				}
 			]
 
-	def get_template(self):
+	def get_template(self, md_as_html=False):
 		module = get_doc_module(self.module, self.doctype, self.name)
 
-		def load_template(extn):
-			template = ""
-			template_path = os.path.join(os.path.dirname(module.__file__), frappe.scrub(self.name) + extn)
-			if os.path.exists(template_path):
-				with open(template_path) as f:
-					template = f.read()
-			return template
+		path = os.path.join(os.path.dirname(module.__file__), frappe.scrub(self.name))
+		extension = FORMATS.get(self.message_type, ".md")
+		file_path = path + extension
 
-		return load_template(".html") or load_template(".md")
+		template = ""
+
+		if os.path.exists(file_path):
+			with open(file_path) as f:
+				template = f.read()
+
+		if not template:
+			return
+
+		if extension == ".md":
+			return frappe.utils.md_to_html(template)
+
+		return template
 
 	def load_standard_properties(self, context):
 		"""load templates and run get_context"""
@@ -423,10 +608,7 @@ def get_context(context):
 				if out:
 					context.update(out)
 
-		self.message = self.get_template()
-
-		if not is_html(self.message):
-			self.message = frappe.utils.md_to_html(self.message)
+		self.message = self.get_template(md_as_html=True)
 
 	def on_trash(self):
 		frappe.cache.hdel("notifications", self.document_type)
@@ -530,3 +712,13 @@ def get_emails_from_template(template, context):
 
 	emails = frappe.render_template(template, context) if "{" in template else template
 	return filter(None, emails.replace(",", "\n").split("\n"))
+
+
+def _parse_receiver_by_document_field(s):
+	fragments = s.split(",")
+	# fields from child table or linked doctype
+	if len(fragments) > 1:
+		data_field, child_field = fragments
+	else:
+		data_field, child_field = fragments[0], None
+	return data_field, child_field

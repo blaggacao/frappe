@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "allow_copy": 1,
+ "creation": "2024-01-23 22:50:19.775191",
+ "default_view": "List",
+ "description": "Matrix ERP bot settings",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "server_url",
+  "column_break_nufi",
+  "oauth_client"
+ ],
+ "fields": [
+  {
+   "fieldname": "column_break_nufi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Where the discovery endpoint is reachable.",
+   "documentation_url": "https://spec.matrix.org/latest/client-server-api/#server-discovery",
+   "fieldname": "server_url",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Server URL",
+   "reqd": 1
+  },
+  {
+   "description": "Secret will be used for JWT-based user login.",
+   "fieldname": "oauth_client",
+   "fieldtype": "Link",
+   "label": "Oauth Client",
+   "options": "OAuth Client"
+  }
+ ],
+ "icon": "fa fa-cog",
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-02-01 00:15:40.545570",
+ "modified_by": "Administrator",
+ "module": "Integrations",
+ "name": "Matrix Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

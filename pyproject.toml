@@ -6,7 +6,7 @@ authors = [
 description = "Metadata driven, full-stack low code web framework"
 requires-python = ">=3.10"
 readme = "README.md"
-dynamic = ["version"]
+version = "15.0.0-dev0+2024-2-8"
 dependencies = [
     # core dependencies
     "Babel~=2.12.1",
@@ -65,7 +65,6 @@ dependencies = [
     "requests~=2.31.0",
     "rq~=1.15.1",
     "rsa>=4.1",
-    "semantic-version~=2.10.0",
     "sentry-sdk~=1.37.1",
     "sqlparse~=0.4.4",
     "tenacity~=8.2.2",

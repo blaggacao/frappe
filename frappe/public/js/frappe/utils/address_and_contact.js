@@ -57,6 +57,52 @@ $.extend(frappe.contacts, {
 			})
 			.then((address_display) => frm.set_value(_display_field, address_display));
 	},
+
+	review_address: (docname, address_html, geolocation, cb) => {
+		const d = new frappe.ui.Dialog({
+			title: __("Review location"),
+			fields: [
+				{
+					label: __("Address"),
+					fieldname: "address_html",
+					fieldtype: "HTML",
+					read_only: 1,
+				},
+				{
+					fieldname: "section_break",
+					fieldtype: "Section Break",
+					description: __(
+						"Verify the location on the map correspends to the address above or adjust it, if not."
+					),
+				},
+				{
+					fieldname: "location",
+					fieldtype: "Geolocation",
+				},
+			],
+		});
+		d.set_value("address_html", address_html);
+		d.set_value("location", geolocation);
+		d.set_primary_action(__("Location is correct"), () => {
+			var values = d.get_values();
+			var args = {
+				docname: docname,
+				location: values.location,
+			};
+			if (values.location == geolocation) {
+				delete args.location;
+			}
+			d.hide();
+			frappe
+				.call({
+					method: "frappe.contacts.doctype.address.address.set_location_reviewed",
+					args: args,
+				})
+				.then(cb());
+		});
+		d.show();
+		return d;
+	},
 });
 
 function new_record(doctype, source_doc) {

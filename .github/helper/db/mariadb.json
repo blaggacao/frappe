@@ -13,7 +13,7 @@
     "admin_password": "admin",
     "root_login": "root",
     "root_password": "travis",
-    "host_name": "http://test_site:8000",
+    "host_name": "http://test_site.tld:8000",
     "monitor": 1,
     "server_script_enabled": true
 }
