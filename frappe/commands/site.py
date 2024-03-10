@@ -261,6 +261,9 @@ def _restore(
 			source_sql=decompressed_file_name,
 			force=True,
 			db_type=frappe.conf.db_type,
+			db_socket=frappe.conf.db_socket,
+			db_host=frappe.conf.db_host,
+			db_port=frappe.conf.db_port,
 		)
 
 	except Exception as err:
