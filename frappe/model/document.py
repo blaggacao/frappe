@@ -1723,6 +1723,7 @@ def _document_values_generator(
 @frappe.whitelist()
 def unlock_document(doctype: str | None = None, name: str | None = None, args=None):
 	if not doctype and not name and args:
+		args = json.loads(args)
 		# Backward compatibility
 		doctype = str(args["doctype"])
 		name = str(args["name"])
