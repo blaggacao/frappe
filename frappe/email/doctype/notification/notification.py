@@ -292,7 +292,7 @@ def get_context(context):
 				bcc=bcc,
 				communication_type="Automated Message",
 			).get("name")
-			# set the outgoing email account because we will in fact send it via sendmail below
+			# set the outgoing email account because we did in fact send it via sendmail above
 			comm = frappe.get_doc("Communication", communication)
 			comm.get_outgoing_email_account()
 

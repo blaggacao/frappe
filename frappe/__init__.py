@@ -268,26 +268,42 @@ def init(site: str, sites_path: str = ".", new_site: bool = False, force=False) 
 
 	local.initialised = True
 
-
 def connect(site: str | None = None, db_name: str | None = None, set_admin_as_user: bool = True) -> None:
 	"""Connect to site database instance.
 
-	:param site: If site is given, calls `frappe.init`.
-	:param db_name: Optional. Will use from `site_config.json`.
+	:param site: (Deprecated) If site is given, calls `frappe.init`.
+	:param db_name: (Deprecated) Optional. Will use from `site_config.json`.
 	:param set_admin_as_user: Set Administrator as current user.
 	"""
 	from frappe.database import get_db
 
 	if site:
+		from frappe.utils.deprecations import deprecation_warning
+
+		deprecation_warning(
+			"Calling frappe.connect with the site argument is deprecated and will be removed in next major version. "
+			"Instead, explicitly invoke frappe.init(site) prior to calling frappe.connect(), if initializing the site is necessary."
+		)
 		init(site)
+	if db_name:
+		from frappe.utils.deprecations import deprecation_warning
+
+		deprecation_warning(
+			"Calling frappe.connect with the db_name argument is deprecated and will be removed in next major version. "
+			"Instead, explicitly invoke frappe.init(site) with the right config prior to calling frappe.connect(), if necessary."
+		)
+
+	assert db_name or local.conf.db_user, "site must be fully initialized, db_user missing"
+	assert db_name or local.conf.db_name, "site must be fully initialized, db_name missing"
+	assert local.conf.db_password, "site must be fully initialized, db_password missing"
 
 	local.db = get_db(
 		socket=local.conf.db_socket,
 		host=local.conf.db_host,
 		port=local.conf.db_port,
-		user=db_name or local.conf.db_name,
+		user=local.conf.db_user or db_name,
 		password=local.conf.db_password,
-		dbname=db_name or local.conf.db_name,
+		cur_db_name=local.conf.db_name or db_name,
 	)
 	if set_admin_as_user:
 		set_user("Administrator")
@@ -301,6 +317,7 @@ def connect_replica() -> bool:
 
 	user = local.conf.db_name
 	password = local.conf.db_password
+	port = local.conf.replica_db_port
 
 	if local.conf.different_credentials_for_replica:
 		user = local.conf.replica_db_name
@@ -309,10 +326,10 @@ def connect_replica() -> bool:
 	local.replica_db = get_db(
 		socket=None,
 		host=local.conf.replica_host,
-		port=local.conf.replica_db_port,
+		port=port,
 		user=user,
 		password=password,
-		dbname=user,
+		cur_db_name=local.conf.db_name,
 	)
 
 	# swap db connections
@@ -377,6 +394,9 @@ def get_site_config(sites_path: str | None = None, site_path: str | None = None)
 			except Exception:
 				print(f"Config hook {hook} failed")
 				traceback.print_exc()
+
+	# Set the user as database name if not set in config
+	config["db_user"] = os.environ.get("FRAPPE_DB_USER") or config.get("db_user") or config.get("db_name")
 
 	return config
 

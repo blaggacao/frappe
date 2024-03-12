@@ -102,7 +102,8 @@ def clear_cache(context):
 
 	for site in context.sites:
 		try:
-			frappe.connect(site)
+			frappe.init(site=site)
+			frappe.connect()
 			frappe.clear_cache()
 			clear_notifications()
 			clear_website_cache()
@@ -769,12 +770,11 @@ def run_tests(
 			click.secho(f"bench --site {site} set-config allow_tests true", fg="green")
 			return
 
-		frappe.init(site=site)
-
 		frappe.flags.skip_before_tests = skip_before_tests
 		frappe.flags.skip_test_records = skip_test_records
 
 		ret = frappe.test_runner.main(
+			site,
 			app,
 			module,
 			doctype,

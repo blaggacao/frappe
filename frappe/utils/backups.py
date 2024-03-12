@@ -373,7 +373,7 @@ class BackupGenerator:
 		gzip_exc = which("gzip")
 		if not gzip_exc:
 			frappe.throw(
-				"`gzip` not found in PATH! This is required to take a backup.", exc=frappe.ExecutableNotFound
+				_("gzip not found in PATH! This is required to take a backup."), exc=frappe.ExecutableNotFound
 			)
 
 		database_header_content = [
@@ -441,14 +441,11 @@ class BackupGenerator:
 				exc=frappe.ExecutableNotFound,
 			)
 		cmd.append(bin)
-		cmd.extend(args)
-		if self.verbose:
-			command = " ".join(wrap([shlex.join([p.replace(self.password, "*" * 10) for p in cmd])]))
-			print(command + "\n")
+		cmd.append(shlex.join(args))
 
-		# do not shell escape the pipes in the wrapper
-		# only shell escape the inner command
-		command = " ".join(wrap([shlex.join(cmd)]))
+		command = " ".join(wrap(cmd))
+		if self.verbose:
+			print(command.replace(shlex.quote(self.password), "*" * 10) + "\n")
 
 		frappe.utils.execute_in_shell(command, low_priority=True, check_exit_code=True)
 

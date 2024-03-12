@@ -73,11 +73,11 @@ class Database:
 	def __init__(
 		self,
 		socket,
-		host,
-		user,
-		password,
-		port,
-		cur_db_name,
+		host=None,
+		user=None,
+		password=None,
+		port=None,
+		cur_db_name=None,
 	):
 		self.setup_type_map()
 		self.socket = socket

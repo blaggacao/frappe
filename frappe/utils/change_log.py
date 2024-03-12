@@ -204,7 +204,6 @@ def parse_latest_non_beta_release(response):
 	Returns
 	json   : json object pertaining to the latest non-beta release
 	"""
-
 	version_list = [
 		release.get("tag_name").strip("v") for release in response if not release.get("prerelease")
 	]

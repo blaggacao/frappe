@@ -23,13 +23,14 @@ def get_mariadb_version(version_string: str = ""):
 	return version.rsplit(".", 1)
 
 
-def setup_database(force, verbose, socket, host, port, user, password):
+def setup_database(force, verbose):
 	frappe.local.session = frappe._dict({"user": "Administrator"})
 
 	db_name = frappe.local.conf.db_name
-	root_conn = get_root_connection(socket, host, port, user, password)
+	root_conn = get_root_connection(frappe.flags.root_login, frappe.flags.root_password)
 	dbman = DbManager(root_conn)
 	dbman_kwargs = {}
+
 	if force or (db_name not in dbman.get_database_list()):
 		dbman.delete_user(db_name, **dbman_kwargs)
 		dbman.drop_database(db_name)
@@ -53,25 +54,25 @@ def setup_database(force, verbose, socket, host, port, user, password):
 	root_conn.close()
 
 
-def drop_user_and_database(db_name, socket, host, port, user, password):
-	frappe.local.db = get_root_connection(socket, host, port, user, password)
+def drop_user_and_database(db_name, root_login, root_password):
+	frappe.local.db = get_root_connection(root_login, root_password)
 	dbman = DbManager(frappe.local.db)
 	dbman.drop_database(db_name)
 	dbman.delete_user(db_name, host="%")
 	dbman.delete_user(db_name)
 
 
-def bootstrap_database(db_name, verbose, source_sql=None):
+def bootstrap_database(verbose, source_sql=None):
 	import sys
 
-	frappe.connect(db_name=db_name)
+	frappe.connect()
 	if not check_database_settings():
 		print("Database settings do not match expected values; stopping database setup.")
 		sys.exit(1)
 
 	import_db_from_sql(source_sql, verbose)
 
-	frappe.connect(db_name=db_name)
+	frappe.connect()
 	if "tabDefaultValue" not in frappe.db.get_tables(cached=False):
 		from click import secho
 
@@ -145,26 +146,26 @@ def check_compatible_versions():
 		)
 
 
-def get_root_connection(socket, host, port, user, password):
+def get_root_connection(root_login, root_password):
 	if not frappe.local.flags.root_connection:
 		from getpass import getpass, getuser
 
-		if not user:
-			user = frappe.conf.get("root_login") or getuser()
+		if not root_login:
+			root_login = getuser()
 
-		if not password:
-			password = frappe.conf.get("root_password")
+		if not root_password:
+			root_password = frappe.conf.get("root_password") or None
 
-		if not password and not socket:
-			password = getpass("MySQL root password: ")
+		if not root_password and not frappe.conf.db_socket:
+			root_password = getpass.getpass("MySQL root password: ")
 
 		frappe.local.flags.root_connection = frappe.database.get_db(
-			socket=socket,
-			host=host,
-			port=port,
-			user=user,
-			password=password,
-			dbname=None,
+			socket=frappe.conf.db_socket,
+			host=frappe.conf.db_host,
+			port=frappe.conf.db_port,
+			user=root_login,
+			password=root_password,
+			cur_db_name=None,
 		)
 
 	return frappe.local.flags.root_connection

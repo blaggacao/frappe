@@ -19,9 +19,10 @@ from frappe.utils.dashboard import sync_dashboards
 from frappe.utils.synchronization import filelock
 
 
-def _is_scheduler_enabled() -> bool:
+def _is_scheduler_enabled(site) -> bool:
 	enable_scheduler = False
 	try:
+		frappe.init(site=site)
 		frappe.connect()
 		enable_scheduler = cint(frappe.db.get_single_value("System Settings", "enable_scheduler"))
 	except Exception:
@@ -72,7 +73,7 @@ def _new_site(
 
 	try:
 		# enable scheduler post install?
-		enable_scheduler = _is_scheduler_enabled()
+		enable_scheduler = _is_scheduler_enabled(site)
 	except Exception:
 		enable_scheduler = False
 
@@ -137,10 +138,13 @@ def install_db(
 	if not db_type:
 		db_type = frappe.conf.db_type
 
+	# Merge instructions: do not add refault username root for mariadb
+	# we check the current user wthich can log in passwordless
+
 	make_conf(
 		db_name,
-		db_password,
 		site_config=site_config,
+		db_password=db_password,
 		db_type=db_type,
 		db_socket=db_socket,
 		db_host=db_host,
@@ -148,19 +152,13 @@ def install_db(
 	)
 	frappe.flags.in_install_db = True
 
+	frappe.flags.root_login = root_login
+	frappe.flags.root_password = root_password
+
 	if setup:
-		setup_database(
-			force,
-			verbose,
-			socket=db_socket,
-			host=db_host,
-			port=db_port,
-			user=root_login,
-			password=root_password,
-		)
+		setup_database(force, verbose)
 
 	bootstrap_database(
-		db_name=frappe.conf.db_name,
 		verbose=verbose,
 		source_sql=source_sql,
 	)
@@ -533,19 +531,13 @@ def init_singles():
 
 
 def make_conf(
-	db_name=None,
-	db_password=None,
-	site_config=None,
-	db_type=None,
-	db_socket=None,
-	db_host=None,
-	db_port=None,
+	db_name=None, db_password=None, site_config=None, db_type=None, db_socket=None, db_host=None, db_port=None
 ):
 	site = frappe.local.site
 	make_site_config(
 		db_name,
 		db_password,
-		site_config=site_config,
+		site_config,
 		db_type=db_type,
 		db_socket=db_socket,
 		db_host=db_host,
@@ -557,13 +549,7 @@ def make_conf(
 
 
 def make_site_config(
-	db_name=None,
-	db_password=None,
-	site_config=None,
-	db_type=None,
-	db_socket=None,
-	db_host=None,
-	db_port=None,
+	db_name=None, db_password=None, site_config=None, db_type=None, db_socket=None, db_host=None, db_port=None
 ):
 	frappe.create_folder(os.path.join(frappe.local.site_path))
 	site_file = get_site_config_path()

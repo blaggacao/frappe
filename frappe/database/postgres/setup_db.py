@@ -4,8 +4,8 @@ import frappe
 from frappe import _
 
 
-def setup_database(force, source_sql, verbose, socket, host, port, user, password):
-	root_conn = get_root_connection(socket, host, port, user, password)
+def setup_database():
+	root_conn = get_root_connection(frappe.flags.root_login, frappe.flags.root_password)
 	root_conn.commit()
 	root_conn.sql("end")
 	root_conn.sql(f"DROP DATABASE IF EXISTS `{frappe.conf.db_name}`")
@@ -15,14 +15,12 @@ def setup_database(force, source_sql, verbose, socket, host, port, user, passwor
 	root_conn.sql(f"GRANT ALL PRIVILEGES ON DATABASE `{frappe.conf.db_name}` TO {frappe.conf.db_name}")
 	root_conn.close()
 
-	bootstrap_database(frappe.conf.db_name, verbose, source_sql)
 
-
-def bootstrap_database(db_name, verbose, source_sql=None):
-	frappe.connect(db_name=db_name)
+def bootstrap_database(verbose, source_sql=None):
+	frappe.connect()
 	import_db_from_sql(source_sql, verbose)
-	frappe.connect(db_name=db_name)
 
+	frappe.connect()
 	if "tabDefaultValue" not in frappe.db.get_tables():
 		import sys
 
@@ -35,7 +33,6 @@ def bootstrap_database(db_name, verbose, source_sql=None):
 			fg="red",
 		)
 		sys.exit(1)
-	frappe.connect()
 
 
 def import_db_from_sql(source_sql=None, verbose=False):
@@ -54,11 +51,11 @@ def import_db_from_sql(source_sql=None, verbose=False):
 	command = []
 
 	if pv:
-		command.extend([f"{pv}", f"{source_sql}", "|"])
+		command.extend([pv, source_sql, "|"])
 		source = []
 		print("Restoring Database file...")
 	else:
-		source = ["-f", f"{source_sql}"]
+		source = ["-f", source_sql]
 
 	bin, args, bin_name = get_command(
 		socket=frappe.conf.db_socket,
@@ -69,6 +66,9 @@ def import_db_from_sql(source_sql=None, verbose=False):
 		db_name=frappe.conf.db_name,
 	)
 
+	if verbose:
+		print(f"\nSTDOUT by psql:\n{restore_proc.stdout.decode()}\nImported from Database File: {source_sql}")
+
 	if not bin:
 		frappe.throw(
 			_("{} not found in PATH! This is required to restore the database.").format(bin_name),
@@ -78,35 +78,41 @@ def import_db_from_sql(source_sql=None, verbose=False):
 	command.append(shlex.join(args))
 	command.extend(source)
 	execute_in_shell(" ".join(command), check_exit_code=True, verbose=verbose)
+	frappe.cache.delete_keys("")  # Delete all keys associated with this site.
 
 
-def get_root_connection(socket, host, port, user, password):
+def get_root_connection(root_login=None, root_password=None):
 	if not frappe.local.flags.root_connection:
-		from getpass import getpass, getuser
+		if not root_login:
+			root_login = frappe.conf.get("root_login") or None
 
-		if not user:
-			user = frappe.conf.get("root_login") or getuser()
+		if not root_login:
+			root_login = input("Enter postgres super user: ")
 
-		if not password:
-			password = frappe.conf.get("root_password")
+		if not root_password:
+			root_password = frappe.conf.get("root_password") or None
 
-		if not password and not socket:
-			password = getpass("Postgres super user password: ")
+		if not root_password and not frappe.conf.db_socket:
+			from getpass import getpass
+
+			root_password = getpass("Postgres super user password: ")
 
 		frappe.local.flags.root_connection = frappe.database.get_db(
-			socket=socket,
-			host=host,
-			port=port,
-			user=user,
-			password=password,
-			dbname=user,
+			socket=frappe.conf.db_socket,
+			host=frappe.conf.db_host,
+			port=frappe.conf.db_port,
+			user=root_login,
+			password=root_password,
+			cur_db_name=root_login,
 		)
 
 	return frappe.local.flags.root_connection
 
 
-def drop_user_and_database(db_name, socket, host, port, user, password):
-	root_conn = get_root_connection(socket, host, port, user, password)
+def drop_user_and_database(db_name, root_login, root_password):
+	root_conn = get_root_connection(
+		frappe.flags.root_login or root_login, frappe.flags.root_password or root_password
+	)
 	root_conn.commit()
 	root_conn.sql(
 		"SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = %s",

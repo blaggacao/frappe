@@ -27,14 +27,13 @@ from frappe.exceptions import SiteNotSpecifiedError
 @click.option(
 	"--db-root-username",
 	"--mariadb-root-username",
-	help="Root username for MariaDB or PostgreSQL. Default is current user.",
+	help='Root username for MariaDB or PostgreSQL, Default is "root"',
 )
 @click.option("--db-root-password", "--mariadb-root-password", help="Root password for MariaDB or PostgreSQL")
 @click.option(
 	"--db-socket",
 	"--mariadb-db-socket",
 	envvar="MYSQL_UNIX_PORT",
-	help="Database socket for MariaDB or PostgreSQL",
 )
 @click.option("--admin-password", help="Administrator password for new site", default=None)
 @click.option("--verbose", is_flag=True, default=False, help="Verbose")
@@ -45,7 +44,7 @@ from frappe.exceptions import SiteNotSpecifiedError
 @click.option(
 	"--setup-db/--no-setup-db",
 	default=True,
-	help="Create user and database in mariadb/postgres; only boostrap if false",
+	help="Create user and database in mariadb/postgres; only bootstrap if false",
 )
 def new_site(
 	site,
@@ -255,7 +254,7 @@ def _restore(
 		)
 
 	except Exception as err:
-		print(err.args[1])
+		print(err)
 		_backup.decryption_rollback()
 		sys.exit(1)
 
@@ -312,6 +311,7 @@ def partial_restore(context, sql_file_path, verbose, encryption_key=None):
 
 	site = get_site(context)
 	frappe.init(site=site)
+	frappe.connect()
 
 	_backup = Backup(sql_file_path)
 
@@ -529,7 +529,8 @@ def add_db_index(context, doctype, column):
 
 	columns = column  # correct naming
 	for site in context.sites:
-		frappe.connect(site=site)
+		frappe.init(site=site)
+		frappe.connect()
 		try:
 			frappe.db.add_index(doctype, columns)
 			if len(columns) == 1:
@@ -571,7 +572,8 @@ def describe_database_table(context, doctype, column):
 	import json
 
 	for site in context.sites:
-		frappe.connect(site=site)
+		frappe.init(site=site)
+		frappe.connect()
 		try:
 			data = _extract_table_stats(doctype, column)
 			# NOTE: Do not print anything else in this to avoid clobbering the output.
@@ -657,7 +659,8 @@ def add_system_manager(context, email, first_name, last_name, send_welcome_email
 	import frappe.utils.user
 
 	for site in context.sites:
-		frappe.connect(site=site)
+		frappe.init(site=site)
+		frappe.connect()
 		try:
 			frappe.utils.user.add_system_manager(email, first_name, last_name, send_welcome_email, password)
 			frappe.db.commit()
@@ -683,7 +686,8 @@ def add_user_for_sites(
 	import frappe.utils.user
 
 	for site in context.sites:
-		frappe.connect(site=site)
+		frappe.init(site=site)
+		frappe.connect()
 		try:
 			add_new_user(email, first_name, last_name, user_type, send_welcome_email, password, add_role)
 			frappe.db.commit()
@@ -984,7 +988,7 @@ def uninstall(context, app, dry_run, yes, no_backup, force):
 	"--db-root-username",
 	"--mariadb-root-username",
 	"--root-login",
-	help="Root username for MariaDB or PostgreSQL. Default is current user.",
+	help='Root username for MariaDB or PostgreSQL, Default is "root"',
 )
 @click.option(
 	"--db-root-password",
@@ -1041,14 +1045,7 @@ def _drop_site(
 			sys.exit(1)
 
 	click.secho("Dropping site database and user", fg="green")
-	drop_user_and_database(
-		frappe.conf.db_name,
-		socket=frappe.conf.db_socket,
-		host=frappe.conf.db_host,
-		port=frappe.conf.db_port,
-		user=db_root_username,
-		password=db_root_password,
-	)
+	drop_user_and_database(frappe.conf.db_name, db_root_username, db_root_password)
 
 	archived_sites_path = archived_sites_path or os.path.join(
 		frappe.utils.get_bench_path(), "archived", "sites"

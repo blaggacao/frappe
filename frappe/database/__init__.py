@@ -3,75 +3,64 @@
 
 # Database Module
 # --------------------
-import os
 from shutil import which
 
 from frappe.database.database import savepoint
 
 
-def setup_database(force, verbose=None, socket=None, host=None, port=None, user=None, password=None):
+def setup_database(force, verbose=None):
 	import frappe
 
 	if frappe.conf.db_type == "postgres":
 		import frappe.database.postgres.setup_db
 
-		return frappe.database.postgres.setup_db.setup_database(
-			force, verbose, socket, host, port, user, password
-		)
+		return frappe.database.postgres.setup_db.setup_database()
 	else:
 		import frappe.database.mariadb.setup_db
 
-		return frappe.database.mariadb.setup_db.setup_database(
-			force, verbose, socket, host, port, user, password
-		)
+		return frappe.database.mariadb.setup_db.setup_database(force, verbose)
 
 
-def bootstrap_database(db_name, verbose=None, source_sql=None):
+def bootstrap_database(verbose=None, source_sql=None):
 	import frappe
 
 	if frappe.conf.db_type == "postgres":
 		import frappe.database.postgres.setup_db
 
-		return frappe.database.postgres.setup_db.bootstrap_database(db_name, verbose, source_sql)
+		return frappe.database.postgres.setup_db.bootstrap_database(verbose, source_sql)
 	else:
 		import frappe.database.mariadb.setup_db
 
-		return frappe.database.mariadb.setup_db.bootstrap_database(db_name, verbose, source_sql)
+		return frappe.database.mariadb.setup_db.bootstrap_database(verbose, source_sql)
 
 
-def drop_user_and_database(db_name, socket=None, host=None, port=None, user=None, password=None):
+def drop_user_and_database(db_name, root_login=None, root_password=None):
 	import frappe
 
 	if frappe.conf.db_type == "postgres":
 		import frappe.database.postgres.setup_db
 
-		return frappe.database.postgres.setup_db.drop_user_and_database(
-			db_name, socket, host, user, password, port
-		)
+		return frappe.database.postgres.setup_db.drop_user_and_database(db_name, root_login, root_password)
 	else:
 		import frappe.database.mariadb.setup_db
 
-		return frappe.database.mariadb.setup_db.drop_user_and_database(
-			db_name, socket, host, user, password, port
-		)
+		return frappe.database.mariadb.setup_db.drop_user_and_database(db_name, root_login, root_password)
 
 
-def get_db(socket=None, host=None, user=None, password=None, port=None, dbname=None):
+def get_db(socket=None, host=None, user=None, password=None, port=None, cur_db_name=None):
 	import frappe
 
 	if frappe.conf.db_type == "postgres":
 		import frappe.database.postgres.database
 
-		return frappe.database.postgres.database.PostgresDatabase(socket, host, user, password, port, dbname)
+		return frappe.database.postgres.database.PostgresDatabase(socket, host, user, password, port, cur_db_name)
 	else:
 		import frappe.database.mariadb.database
 
-		return frappe.database.mariadb.database.MariaDBDatabase(socket, host, user, password, port, dbname)
+		return frappe.database.mariadb.database.MariaDBDatabase(socket, host, user, password, port, cur_db_name)
 
 
-def get_command(
-	socket=None, host=None, port=None, user=None, password=None, db_name=None, extra=None, dump=False
-):
+def get_command(socket=None, host=None, port=None, user=None, password=None, db_name=None, extra=None, dump=False):
 	import frappe
 
 	if frappe.conf.db_type == "postgres":
@@ -97,9 +86,9 @@ def get_command(
 
 	else:
 		if dump:
-			bin, bin_name = which("mysqldump"), "mysqldump"
+			bin, bin_name = which("mariadb-dump") or which("mysqldump"), "mariadb-dump"
 		else:
-			bin, bin_name = which("mysql"), "mysql"
+			bin, bin_name = which("mariadb") or which("mysql"), "mariadb"
 
 		command = [f"--user={user}"]
 		if socket:
