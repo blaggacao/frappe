@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+import typing
 
 import click
 
@@ -13,6 +14,9 @@ from frappe.exceptions import SiteNotSpecifiedError
 from frappe.utils import cint, update_progress_bar
 
 EXTRA_ARGS_CTX = {"ignore_unknown_options": True, "allow_extra_args": True}
+
+if typing.TYPE_CHECKING:
+	from IPython.terminal.embed import InteractiveShellEmbed
 
 
 @click.command("build")
@@ -471,9 +475,12 @@ def mariadb(context, extra_args):
 	"""
 	Enter into mariadb console for a given site.
 	"""
+	from frappe.utils import get_site_path
+
 	site = get_site(context)
 	frappe.init(site=site)
 	frappe.conf.db_type = "mariadb"
+	os.environ["MYSQL_HISTFILE"] = os.path.abspath(get_site_path("logs", "mariadb_console.log"))
 	_enter_console(extra_args=extra_args)
 
 
@@ -563,6 +570,18 @@ def _console_cleanup():
 	frappe.destroy()
 
 
+def store_logs(terminal: "InteractiveShellEmbed") -> None:
+	from contextlib import suppress
+
+	frappe.log_level = 20  # info
+	with suppress(Exception):
+		logger = frappe.logger("ipython")
+		logger.info("=== bench console session ===")
+		for line in terminal.history_manager.get_range():
+			logger.info(line[2])
+		logger.info("=== session end ===")
+
+
 @click.command("console")
 @click.option("--autoreload", is_flag=True, help="Reload changes to code automatically")
 @pass_context
@@ -586,6 +605,7 @@ def console(context, autoreload=False):
 
 	all_apps = frappe.get_installed_apps()
 	failed_to_import = []
+	register(store_logs, terminal)  # Note: atexit runs in reverse order of registration
 
 	for app in list(all_apps):
 		try:
@@ -597,6 +617,14 @@ def console(context, autoreload=False):
 	print("Apps in this namespace:\n{}".format(", ".join(all_apps)))
 	if failed_to_import:
 		print("\nFailed to import:\n{}".format(", ".join(failed_to_import)))
+
+	# ref: https://stackoverflow.com/a/74681224
+	try:
+		from IPython.core import ultratb
+
+		ultratb.VerboseTB._tb_highlight = "bg:ansibrightblack"
+	except Exception:
+		pass
 
 	terminal.colors = "neutral"
 	terminal.display_banner = False
