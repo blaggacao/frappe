@@ -2,10 +2,13 @@
 # For license information, please see license.txt
 
 import base64
+import urllib.parse
 from contextlib import closing
 from io import BytesIO
 
 import qrcode
+import requests
+import requests_unixsocket
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import (
 	HorizontalGradiantColorMask,
@@ -22,7 +25,6 @@ from qrcode.image.styles.moduledrawers import (
 	SquareModuleDrawer,
 	VerticalBarsDrawer,
 )
-from whatsfly import WhatsApp
 
 import frappe
 from frappe import _
@@ -38,15 +40,53 @@ class WhatsAppSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
-		is_connected: DF.Check
-		title: DF.Data | None
+		jid: DF.Data | None
+		server: DF.Data
 	# end: auto-generated types
 
+	def _post(self, cmd):
+		if not self.get("_session"):
+			if self.server.startswith("/"):
+				self._server = "http+unix://" + urllib.parse.quote_plus(self.server)
+				self._session = requests_unixsocket.Session()
+			else:
+				self._server = self.server
+				self._session = requests.Session()
+			self._server += "/command"
+		try:
+			res = self._session.post(self._server, json=cmd, timeout=5)
+		except Exception as e:
+			frappe.throw(_("Connectivity issue with whatsmeow server: {}").format(e))
+		if res.status_code != 200:
+			return
+		return res.text
+
+	@property
+	def jid(self):
+		try:
+			return self.whoami()
+		except Exception:
+			return
+
 	@frappe.whitelist()
-	def genreate_qr_code(self):
-		input_data = "2@JA1viRxc6z0xApdMhH1IINZ6sbXpmR0iTz/SwCbTKCE5GtUMWcNPKGVZ8B+VlnI9gIlQjLK7OAlaxw==,NjMHcPNw1D2to1yQ7LP/t4SYJs5WyxWLC1hBhLDKPAA=,KpouGfWIzd6+dqdCaEPqXAMFb7kTSlyHKErcTueJh1g=,bwUuHVcoWQ7CI7fj/HMX+G0K/V9MbDoYcKUw6LCli8I="
+	def logout(self):
+		if not self.server:
+			return
+		self._post({"cmd": "logout"})
+
+	@frappe.whitelist()
+	def whoami(self):
+		if not self.server:
+			return
+		return self._post({"cmd": "whoami"})
+
+	@frappe.whitelist()
+	def pair(self):
+		# qr codes are dispached upon login
+		res = self._post({"cmd": "reconnect"})
+
 		qr = qrcode.QRCode(version=7, box_size=6, border=3)
-		qr.add_data(input_data)
+		qr.add_data(res)
 		qr.make(fit=True)
 		img = qr.make_image(
 			image_factory=StyledPilImage,
@@ -64,11 +104,10 @@ class WhatsAppSettings(Document):
 
 
 def send_whatsapp(msg, recipients=None):
-	whatsapp = frappe.get_single("WhatsApp Settings")
+	settings = frappe.get_single("WhatsApp Settings")
 
-	# if not whatsapp.is_connected:
-	# 	frappe.throw(_("Please initialize WhatsApp Settings via the device linking QR code"))
+	if not settings.jid:
+		frappe.throw(_("WhatsApp currently not linked: please revise WhatsApp Settings"))
 
-	with closing(WhatsApp()) as chat:
-		for recp in recipients:
-			chat.send_message(phone=recp, message=msg)
+	for recp in recipients:
+		settings._post({cmd: "send", args: [recp, msg]})

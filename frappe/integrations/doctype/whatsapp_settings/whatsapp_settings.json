@@ -1,38 +1,39 @@
 {
  "actions": [],
- "allow_rename": 1,
  "creation": "2024-02-05 15:31:28.415975",
  "default_view": "List",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "title",
+  "server",
   "column_break_fqgp",
-  "is_connected"
+  "jid"
  ],
  "fields": [
-  {
-   "fieldname": "title",
-   "fieldtype": "Data",
-   "label": "Title"
-  },
   {
    "fieldname": "column_break_fqgp",
    "fieldtype": "Column Break"
   },
   {
-   "default": "0",
-   "fieldname": "is_connected",
-   "fieldtype": "Check",
-   "label": "Is Connected",
+   "fieldname": "server",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Whatsmeow Server",
+   "reqd": 1
+  },
+  {
+   "fieldname": "jid",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "Whatsapp ID",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-02-05 16:41:49.863635",
+ "modified": "2024-03-16 04:30:00.099178",
  "modified_by": "Administrator",
  "module": "Integrations",
  "name": "WhatsApp Settings",
