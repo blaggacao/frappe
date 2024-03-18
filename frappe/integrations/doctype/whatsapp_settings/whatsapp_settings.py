@@ -110,4 +110,4 @@ def send_whatsapp(msg, recipients=None):
 		frappe.throw(_("WhatsApp currently not linked: please revise WhatsApp Settings"))
 
 	for recp in recipients:
-		settings._post({cmd: "send", args: [recp, msg]})
+		settings._post({"cmd": "send", "args": [recp, msg]})
