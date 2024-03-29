@@ -51,6 +51,8 @@ def main(
 	doctype_list_path=None,
 	failfast=False,
 	case=None,
+	skip_before_tests=None,
+	skip_test_records=None,
 ):
 	global unittest_runner
 
@@ -73,6 +75,7 @@ def main(
 	try:
 		frappe.flags.print_messages = verbose
 		frappe.flags.in_test = True
+		frappe.flags.skip_test_records = skip_test_records
 
 		# workaround! since there is no separate test db
 		frappe.clear_cache()
@@ -80,7 +83,7 @@ def main(
 		if not scheduler_disabled_by_user:
 			frappe.utils.scheduler.disable_scheduler()
 
-		if not frappe.flags.skip_before_tests:
+		if not skip_before_tests:
 			if verbose:
 				print('Running "before_tests" hooks')
 			for fn in frappe.get_hooks("before_tests", app_name=app):
