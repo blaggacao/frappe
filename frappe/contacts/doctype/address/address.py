@@ -3,6 +3,7 @@
 
 import json
 
+import shapely
 from jinja2 import TemplateSyntaxError
 
 import frappe
@@ -73,6 +74,9 @@ class Address(Document):
 		else:
 			throw(_("Address Title is mandatory."))
 
+	def before_validate(self):
+		self._set_coordinates()
+
 	def validate(self):
 		self.link_address()
 		self.validate_preferred_address()
@@ -124,8 +128,10 @@ class Address(Document):
 
 	@frappe.whitelist()
 	def set_coordinates(self):
-		import shapely
+		self._set_coordinates()
+		self.save()
 
+	def _set_coordinates(self):
 		fc = shapely.from_geojson(self.location)
 		if not fc:
 			return
@@ -133,7 +139,6 @@ class Address(Document):
 
 		self.latitude = p.y
 		self.longitude = p.x
-		self.save()
 
 	@frappe.whitelist()
 	def set_location(self):
@@ -149,8 +154,6 @@ class Address(Document):
 				"longitude": geocode["geometry"]["location"]["lng"],
 			}
 		)
-		self.longitude = data.longitude
-		self.latitude = data.latitude
 		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
 		self.location_reviewed = False
 
