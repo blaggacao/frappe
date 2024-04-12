@@ -397,12 +397,13 @@ def get_context(context):
 			yield s[start:]
 
 		chunks = get_chunks(message_body)
+		message_list = []
 		for chunk in chunks:
 			msg = frappe.utils.strip_html_tags(chunk)
-			send_whatsapp(
-				msg=msg,
-				recipients=recipients,
-			)
+			for recp in recipients:
+				message_list.append((msg, recp))
+
+		send_whatsapp(message_list)
 
 	def send_matrix(self, doc, context):
 		user = frappe.get_value("User", doc.modified_by or doc.owner, "matrix_id")

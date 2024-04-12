@@ -8,7 +8,13 @@
  "field_order": [
   "server",
   "column_break_fqgp",
-  "jid"
+  "jid",
+  "humanizer_settings_section",
+  "work_sprint",
+  "work_sprint_jitter",
+  "column_break_cnth",
+  "pause",
+  "pause_jitter"
  ],
  "fields": [
   {
@@ -28,12 +34,50 @@
    "is_virtual": 1,
    "label": "Whatsapp ID",
    "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "humanizer_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Humanizer Settings"
+  },
+  {
+   "default": "1080",
+   "description": "in seconds",
+   "fieldname": "work_sprint",
+   "fieldtype": "Int",
+   "label": "Work Sprint"
+  },
+  {
+   "default": "300",
+   "description": "in seconds",
+   "fieldname": "work_sprint_jitter",
+   "fieldtype": "Int",
+   "label": "Work Sprint Jitter"
+  },
+  {
+   "fieldname": "column_break_cnth",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "480",
+   "description": "in seconds",
+   "fieldname": "pause",
+   "fieldtype": "Int",
+   "label": "Pause"
+  },
+  {
+   "default": "180",
+   "description": "in seconds",
+   "fieldname": "pause_jitter",
+   "fieldtype": "Int",
+   "label": "Pause Jitter"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-16 04:30:00.099178",
+ "modified": "2024-04-10 12:24:28.817363",
  "modified_by": "Administrator",
  "module": "Integrations",
  "name": "WhatsApp Settings",

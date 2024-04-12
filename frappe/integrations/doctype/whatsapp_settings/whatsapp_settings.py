@@ -2,9 +2,13 @@
 # For license information, please see license.txt
 
 import base64
+import time
 import urllib.parse
+from collections.abc import Iterable
 from contextlib import closing
 from io import BytesIO
+from random import randint
+from typing import overload
 
 import qrcode
 import requests
@@ -41,7 +45,11 @@ class WhatsAppSettings(Document):
 		from frappe.types import DF
 
 		jid: DF.Data | None
+		pause: DF.Int
+		pause_jitter: DF.Int
 		server: DF.Data
+		work_sprint: DF.Int
+		work_sprint_jitter: DF.Int
 	# end: auto-generated types
 
 	def _post(self, cmd):
@@ -103,11 +111,32 @@ class WhatsAppSettings(Document):
 		return "data:image/png;base64,{}".format(b64.decode("utf-8"))
 
 
-def send_whatsapp(msg, recipients=None):
+def send_whatsapp(messages: Iterable[tuple[str, str]], wait: int = 5, jitter: int = 2) -> None:
 	settings = frappe.get_single("WhatsApp Settings")
 
 	if not settings.jid:
 		frappe.throw(_("WhatsApp currently not linked: please revise WhatsApp Settings"))
 
-	for recp in recipients:
+	start_time = time.time()
+	needs_pause = randint(
+		settings.work_sprint - settings.work_sprint_jitter,
+		settings.work_sprint + settings.work_sprint_jitter,
+	)
+	pause = randint(
+		settings.pause - settings.pause_jitter,
+		settings.pause + settings.pause_jitter,
+	)
+	for msg, recp in messages:
 		settings._post({"cmd": "send", "args": [recp, msg]})
+		time.sleep(randint(wait - jitter, wait + jitter))
+		if time.time() - start_time > needs_pause:
+			time.sleep(pause)
+			start_time = time.time()
+			needs_pause = randint(
+				settings.work_sprint - settings.work_sprint_jitter,
+				settings.work_sprint + settings.work_sprint_jitter,
+			)
+			pause = randint(
+				settings.pause - settings.pause_jitter,
+				settings.pause + settings.pause_jitter,
+			)
