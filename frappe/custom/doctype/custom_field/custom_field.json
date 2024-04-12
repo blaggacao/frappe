@@ -142,6 +142,7 @@
   {
    "fieldname": "options",
    "fieldtype": "Small Text",
+   "ignore_xss_filter": 1,
    "in_list_view": 1,
    "label": "Options",
    "oldfieldname": "options",
@@ -185,6 +186,7 @@
   {
    "fieldname": "default",
    "fieldtype": "Text",
+   "ignore_xss_filter": 1,
    "label": "Default Value",
    "oldfieldname": "default",
    "oldfieldtype": "Text"
@@ -457,7 +459,7 @@
  "idx": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-03-07 17:34:47.167183",
+ "modified": "2024-04-12 16:25:50.349736",
  "modified_by": "Administrator",
  "module": "Custom",
  "name": "Custom Field",
