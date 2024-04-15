@@ -19,9 +19,12 @@ EVENT_MAP = {
 	"after_delete": "After Delete",
 	"before_update_after_submit": "Before Save (Submitted Document)",
 	"on_update_after_submit": "After Save (Submitted Document)",
-	"on_payment_paid": "On Payment Paid",
 	"on_payment_failed": "On Payment Failed",
-	"on_payment_authorized": "On Payment Authorization",
+	"on_payment_charge_processed": "On Payment Charge Processed",
+	"on_payment_mandated_charge_processed": "On Payment Mandate Charge Processed",
+	"on_payment_mandate_acquisition_processed": "On Payment Mandate Acquisition Processed",
+	"on_payment_paid": "On Payment Paid (Legacy Gateway)",
+	"on_payment_authorized": "On Payment Authorization (Legacy Gateway)",
 }
 
 
