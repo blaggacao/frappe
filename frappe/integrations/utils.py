@@ -27,7 +27,10 @@ def make_request(method, url, auth=None, headers=None, data=None, json=None):
 
 		return frappe.flags.integration_request.json()
 	except Exception as exc:
-		frappe.log_error()
+		try:
+			frappe.flags.integration_request_doc.log_error()
+		except Exception:
+			frappe.log_error()
 		raise exc
 
 
