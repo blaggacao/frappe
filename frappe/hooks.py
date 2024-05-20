@@ -212,6 +212,10 @@ scheduler_events = {
 		"30 * * * *": [
 			"frappe.core.doctype.prepared_report.prepared_report.expire_stalled_report",
 		],
+		# # At 07:15.
+		"15 7 * * *": [
+			"frappe.email.doctype.notification.notification.trigger_daily_alerts",
+		],
 		# At minute 0 past every 3rd hour from 7 through 20.
 		"0 7-20/3 * * *": [
 			"frappe.integrations.doctype.whatsapp_message_log.whatsapp_message_log.send_batch",
@@ -242,7 +246,6 @@ scheduler_events = {
 		"frappe.desk.notifications.clear_notifications",
 		"frappe.desk.doctype.event.event.send_event_digest",
 		"frappe.sessions.clear_expired_sessions",
-		"frappe.email.doctype.notification.notification.trigger_daily_alerts",
 		"frappe.website.doctype.personal_data_deletion_request.personal_data_deletion_request.remove_unverified_record",
 		"frappe.desk.form.document_follow.send_daily_updates",
 		"frappe.social.doctype.energy_point_settings.energy_point_settings.allocate_review_points",

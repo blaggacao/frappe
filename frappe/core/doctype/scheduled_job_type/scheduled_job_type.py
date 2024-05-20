@@ -102,14 +102,14 @@ class ScheduledJobType(Document):
 
 	def get_next_execution(self):
 		CRON_MAP = {
-			"Yearly": "0 8 1 1 *",
-			"Annual": "0 8 1 1 *",
-			"Monthly": "0 8 1 * *",
-			"Monthly Long": "0 8 1 * *",
-			"Weekly": "0 8 * * 0",
-			"Weekly Long": "0 8 * * 0",
-			"Daily": "0 8 * * *",
-			"Daily Long": "0 8 * * *",
+			"Yearly": "0 0 1 1 *",
+			"Annual": "0 0 1 1 *",
+			"Monthly": "0 0 1 * *",
+			"Monthly Long": "0 0 1 * *",
+			"Weekly": "0 0 * * 0",
+			"Weekly Long": "0 0 * * 0",
+			"Daily": "0 0 * * *",
+			"Daily Long": "0 0 * * *",
 			"Hourly": "0 * * * *",
 			"Hourly Long": "0 * * * *",
 			"All": f"*/{(frappe.get_conf().scheduler_interval or 240) // 60} * * * *",
