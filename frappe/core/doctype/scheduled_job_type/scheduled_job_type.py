@@ -165,6 +165,8 @@ class ScheduledJobType(Document):
 		frappe.db.commit()
 
 	def get_queue_name(self):
+		if self.method == "frappe.integrations.doctype.whatsapp_message_log.whatsapp_message_log.send_batch":
+			return "whatsapp"
 		return "long" if ("Long" in self.frequency) else "default"
 
 	def on_trash(self):

@@ -12,9 +12,11 @@
   "humanizer_settings_section",
   "work_sprint",
   "work_sprint_jitter",
+  "message_cadence",
   "column_break_cnth",
   "pause",
-  "pause_jitter"
+  "pause_jitter",
+  "cadence_jitter"
  ],
  "fields": [
   {
@@ -72,12 +74,26 @@
    "fieldname": "pause_jitter",
    "fieldtype": "Int",
    "label": "Pause Jitter"
+  },
+  {
+   "default": "5",
+   "description": "in seconds",
+   "fieldname": "message_cadence",
+   "fieldtype": "Int",
+   "label": "Message Cadence"
+  },
+  {
+   "default": "2",
+   "description": "in seconds",
+   "fieldname": "cadence_jitter",
+   "fieldtype": "Int",
+   "label": "Cadence Jitter"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-04-10 12:24:28.817363",
+ "modified": "2024-05-20 14:58:10.410158",
  "modified_by": "Administrator",
  "module": "Integrations",
  "name": "WhatsApp Settings",

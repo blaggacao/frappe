@@ -12,7 +12,7 @@ from frappe.core.doctype.sms_settings.sms_settings import send_sms
 from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
 from frappe.integrations.doctype.matrix_settings.matrix_settings import send_matrix
 from frappe.integrations.doctype.slack_webhook_url.slack_webhook_url import send_slack_message
-from frappe.integrations.doctype.whatsapp_settings.whatsapp_settings import send_whatsapp
+from frappe.integrations.doctype.whatsapp_settings.whatsapp_settings import enqueue_whatsapp
 from frappe.model.document import Document
 from frappe.modules.utils import export_module_json, get_doc_module
 from frappe.utils import add_to_date, cast, nowdate, validate_email_address
@@ -403,7 +403,7 @@ def get_context(context):
 			for recp in recipients:
 				message_list.append((msg, recp))
 
-		send_whatsapp(message_list)
+		enqueue_whatsapp(message_list, try_send_now=True)
 
 	def send_matrix(self, doc, context):
 		user = frappe.get_value("User", doc.modified_by or doc.owner, "matrix_id")

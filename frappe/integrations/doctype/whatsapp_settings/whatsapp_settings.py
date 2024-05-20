@@ -8,7 +8,7 @@ from collections.abc import Iterable
 from contextlib import closing
 from io import BytesIO
 from random import randint
-from typing import overload
+from typing import Union, overload
 
 import qrcode
 import requests
@@ -44,7 +44,9 @@ class WhatsAppSettings(Document):
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
+		cadence_jitter: DF.Int
 		jid: DF.Data | None
+		message_cadence: DF.Int
 		pause: DF.Int
 		pause_jitter: DF.Int
 		server: DF.Data
@@ -52,7 +54,7 @@ class WhatsAppSettings(Document):
 		work_sprint_jitter: DF.Int
 	# end: auto-generated types
 
-	def _post(self, cmd):
+	def _post(self, cmd) -> str | None:
 		if not self.get("_session"):
 			if self.server.startswith("/"):
 				self._server = "http+unix://" + urllib.parse.quote_plus(self.server)
@@ -63,11 +65,15 @@ class WhatsAppSettings(Document):
 			self._server += "/command"
 		try:
 			res = self._session.post(self._server, json=cmd, timeout=5)
+			res.raise_for_status()
+		# This will raise an exception if the status code is not in the 200-299 range
+		except requests.exceptions.HTTPError as e:
+			self.log_error("Sending Failed", e)
+			return
 		except Exception as e:
 			frappe.throw(_("Connectivity issue with whatsmeow server: {}").format(e))
-		if res.status_code != 200:
-			return
-		return res.text
+		else:
+			return res.text
 
 	@property
 	def jid(self):
@@ -111,32 +117,86 @@ class WhatsAppSettings(Document):
 		return "data:image/png;base64,{}".format(b64.decode("utf-8"))
 
 
-def send_whatsapp(messages: Iterable[tuple[str, str]], wait: int = 5, jitter: int = 2) -> None:
+def enqueue_whatsapp(messages: Iterable[tuple[str, str]], try_send_now=False) -> None:
+	if try_send_now:
+		send_now = []
+		for message, recipient in messages:
+			wml = frappe.new_doc("Whatsapp Message Log")
+			wml.update(
+				{
+					"message": message,
+					"recipient": recipient,
+					"status": "Queued",
+				}
+			)
+			wml.insert(ignore_permissions=True)
+			send_now.append((wml.name, recipient, message))
+
+		from frappe.utils.background_jobs import enqueue
+		enqueue(
+			method=send_whatsapp,
+			queue="long",
+			messages=send_now,
+		)
+	else:
+		frappe.db.bulk_insert(
+			"Whatsapp Message Log",
+			["message", "recipient", "status"],
+			map(lambda a, b: (a, b, "Queued"), messages),
+		)
+
+
+def send_whatsapp(
+	messages: Iterable[tuple[str, str] | tuple[str, str, str]]
+) -> None:
 	settings = frappe.get_single("WhatsApp Settings")
 
 	if not settings.jid:
 		frappe.throw(_("WhatsApp currently not linked: please revise WhatsApp Settings"))
 
+	wait = settings.message_cadence or 5
+	jitter = settings.cadence_jitter or 2
+	sprint = settings.work_sprint or 1080
+	sprint_jitter = settings.work_sprint_jitter or 300
+	pause = settings.pause or 480
+	pause_jitter = settings.pause_jitter or 180 
+
 	start_time = time.time()
+
 	needs_pause = randint(
-		settings.work_sprint - settings.work_sprint_jitter,
-		settings.work_sprint + settings.work_sprint_jitter,
+		sprint - sprint_jitter,
+		sprint + sprint_jitter,
 	)
 	pause = randint(
-		settings.pause - settings.pause_jitter,
-		settings.pause + settings.pause_jitter,
+		pause - pause_jitter,
+		pause + pause_jitter,
 	)
-	for msg, recp in messages:
-		settings._post({"cmd": "send", "args": [recp, msg]})
+	for tup in messages:
+		if isinstance(tup, tuple) and len(tup) == 2:
+			# Handle 2-item tuple
+			recp, msg = tup
+			wml = None
+		elif isinstance(tup, tuple) and len(tup) == 3:
+			# Handle 3-item tuple
+			wml, recp, msg = tup
+			# guard against parallel processing of a queue item
+			# by the background and by the immediate send
+			status = frappe.db.get_value("Whatsapp Message Log", wml, "status")
+			if status == "Sent":
+				continue
+		success = settings._post({"cmd": "send", "args": [recp, msg]})
+		if wml and success is not None:
+			frappe.db.set_value("Whatsapp Message Log", wml, "status", "Sent")
+			frappe.db.commit() # ensure status is persistet
 		time.sleep(randint(wait - jitter, wait + jitter))
 		if time.time() - start_time > needs_pause:
 			time.sleep(pause)
 			start_time = time.time()
 			needs_pause = randint(
-				settings.work_sprint - settings.work_sprint_jitter,
-				settings.work_sprint + settings.work_sprint_jitter,
+				sprint - sprint_jitter,
+				sprint + sprint_jitter,
 			)
 			pause = randint(
-				settings.pause - settings.pause_jitter,
-				settings.pause + settings.pause_jitter,
+				pause - pause_jitter,
+				pause + pause_jitter,
 			)

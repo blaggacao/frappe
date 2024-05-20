@@ -212,6 +212,10 @@ scheduler_events = {
 		"30 * * * *": [
 			"frappe.core.doctype.prepared_report.prepared_report.expire_stalled_report",
 		],
+		# At minute 0 past every 3rd hour from 7 through 20.
+		"0 7-20/3 * * *": [
+			"frappe.integrations.doctype.whatsapp_message_log.whatsapp_message_log.send_batch",
+		],
 		# Daily but offset by 45 minutes
 		"45 0 * * *": [
 			"frappe.core.doctype.log_settings.log_settings.run_log_clean_up",
