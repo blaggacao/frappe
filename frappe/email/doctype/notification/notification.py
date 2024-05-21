@@ -29,15 +29,13 @@ class Notification(Document):
 	from typing import TYPE_CHECKING
 
 	if TYPE_CHECKING:
-		from frappe.email.doctype.notification_recipient.notification_recipient import (
-			NotificationRecipient,
-		)
+		from frappe.email.doctype.notification_recipient.notification_recipient import NotificationRecipient
 		from frappe.types import DF
 
 		attach_print: DF.Check
 		channel: DF.Literal["Email", "Slack", "System Notification", "SMS", "WhatsApp", "Matrix"]
 		condition: DF.Code | None
-		date_changed: DF.Literal[None]
+		date_changed: DF.LiteralNone
 		days_in_advance: DF.Int
 		document_type: DF.Link
 		enabled: DF.Check
@@ -55,10 +53,14 @@ class Notification(Document):
 		]
 		is_standard: DF.Check
 		matrix_room: DF.Data | None
+		meets_condition: DF.Data | None
 		message: DF.Code | None
 		message_type: DF.Literal["Markdown", "HTML", "Plain Text"]
 		method: DF.Data | None
 		module: DF.Link | None
+		preview_document: DF.DynamicLink | None
+		preview_rendered_message: DF.Code | None
+		preview_rendered_subject: DF.Data | None
 		print_format: DF.Link | None
 		property_value: DF.Data | None
 		recipients: DF.Table[NotificationRecipient]
@@ -66,10 +68,10 @@ class Notification(Document):
 		send_to_all_assignees: DF.Check
 		sender: DF.Link | None
 		sender_email: DF.Data | None
-		set_property_after_alert: DF.Literal[None]
+		set_property_after_alert: DF.LiteralNone
 		slack_webhook_url: DF.Link | None
 		subject: DF.Data | None
-		value_changed: DF.Literal[None]
+		value_changed: DF.LiteralNone
 	# end: auto-generated types
 
 	def onload(self):
@@ -80,6 +82,64 @@ class Notification(Document):
 	def autoname(self):
 		if not self.name:
 			self.name = self.subject
+
+	@property
+	def meets_condition(self):
+		if not self.condition:
+			return _("Yes")
+
+		if not (self.preview_document and self.document_type):
+			return _("Select a document to check if it meets conditions.")
+
+		try:
+			doc = frappe.get_cached_doc(self.document_type, self.preview_document)
+			met_condition = frappe.safe_eval(self.condition, eval_locals=get_context(doc))
+		except Exception as e:
+			return _("Failed to evaluate conditions: {}").format(e)
+		return _("Yes") if met_condition else _("No")
+
+	@property
+	def preview_rendered_message(self):
+		if not (self.preview_document and self.document_type):
+			return _("Select a document to preview message")
+
+		try:
+			doc = frappe.get_cached_doc(self.document_type, self.preview_document)
+			context = get_context(doc)
+			context.update({"alert": self, "comments": None})
+			if doc.get("_comments"):
+				context["comments"] = json.loads(doc.get("_comments"))
+			msg = frappe.render_template(self.message, context)
+			if self.channel == "SMS":
+				return frappe.utils.strip_html_tags(msg)
+			return msg
+		except Exception as e:
+			return _("Failed to render message: {}").format(e)
+
+	@property
+	def preview_rendered_subject(self):
+		if not (self.preview_document and self.document_type):
+			return _("Select a document to preview subject")
+
+		try:
+			doc = frappe.get_cached_doc(self.document_type, self.preview_document)
+			context = get_context(doc)
+			context.update({"alert": self, "comments": None})
+			if doc.get("_comments"):
+				context["comments"] = json.loads(doc.get("_comments"))
+			if not self.subject:
+				return _("No subject")
+			if "{" in self.subject:
+				return frappe.render_template(self.subject, context)
+			return self.subject
+		except Exception as e:
+			return _("Failed to render subject: {}").format(e)
+
+	@frappe.whitelist()
+	def generate_preview(self):
+		# This function doesn't need to do anything specific as virtual fields
+		# get evaluated automatically.
+		pass
 
 	def validate(self):
 		if self.channel in ("Email", "Slack", "System Notification"):

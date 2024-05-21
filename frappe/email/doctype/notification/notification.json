@@ -43,7 +43,15 @@
   "view_properties",
   "column_break_25",
   "attach_print",
-  "print_format"
+  "print_format",
+  "preview_tab",
+  "section_break_dpmd",
+  "preview_document",
+  "column_break_jpfc",
+  "meets_condition",
+  "section_break_sdof",
+  "preview_rendered_subject",
+  "preview_rendered_message"
  ],
  "fields": [
   {
@@ -294,12 +302,54 @@
    "fieldname": "matrix_room",
    "fieldtype": "Data",
    "label": "Matrix Room"
+  },
+  {
+   "fieldname": "section_break_dpmd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "preview_document",
+   "fieldtype": "Dynamic Link",
+   "label": "Select Document",
+   "options": "document_type"
+  },
+  {
+   "fieldname": "column_break_jpfc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "meets_condition",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "Meets Condition?"
+  },
+  {
+   "fieldname": "preview_tab",
+   "fieldtype": "Tab Break",
+   "label": "Preview"
+  },
+  {
+   "fieldname": "section_break_sdof",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "preview_rendered_message",
+   "fieldtype": "Code",
+   "is_virtual": 1,
+   "label": "Rendered Message"
+  },
+  {
+   "depends_on": "eval: in_list(['Email', 'Slack', 'System Notification'], doc.channel)",
+   "fieldname": "preview_rendered_subject",
+   "fieldtype": "Data",
+   "is_virtual": 1,
+   "label": "Rendered Subject"
   }
  ],
  "icon": "fa fa-envelope",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-31 14:29:55.085222",
+ "modified": "2024-05-21 13:58:45.419683",
  "modified_by": "Administrator",
  "module": "Email",
  "name": "Notification",

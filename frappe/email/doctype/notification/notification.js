@@ -172,6 +172,17 @@ frappe.ui.form.on("Notification", {
 	document_type: function (frm) {
 		frappe.notification.setup_fieldname_select(frm);
 	},
+	preview_document: (frm) => {
+		frappe.call({
+			method: "generate_preview",
+			doc: frm.doc,
+			callback: (r) => {
+				frm.refresh_field("meets_condition");
+				frm.refresh_field("preview_rendered_message");
+				frm.refresh_field("preview_rendered_subject");
+			},
+		});
+	},
 	view_properties: function (frm) {
 		frappe.route_options = { doc_type: frm.doc.document_type };
 		frappe.set_route("Form", "Customize Form");
