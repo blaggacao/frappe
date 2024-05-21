@@ -50,7 +50,11 @@ frappe.notification = {
 			let receiver_fields = [];
 			let find_receiver_fields = function (extra) {
 				let predicate = function (df) {
-					return extra(df) || (df.options == "User" && df.fieldtype == "Link");
+					return (
+						extra(df) ||
+						(df.options == "User" && df.fieldtype == "Link") ||
+						(df.options == "Customer" && df.fieldtype == "Link")
+					);
 				};
 				let extract = function (df) {
 					// Add recipients from child doctypes into select dropdown
