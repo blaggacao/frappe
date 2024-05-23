@@ -133,6 +133,7 @@ def enqueue_whatsapp(messages: Iterable[tuple[str, str]], try_send_now=False) ->
 			send_now.append((wml.name, recipient, message))
 
 		from frappe.utils.background_jobs import enqueue
+
 		enqueue(
 			method=send_whatsapp,
 			queue="long",
@@ -141,14 +142,13 @@ def enqueue_whatsapp(messages: Iterable[tuple[str, str]], try_send_now=False) ->
 	else:
 		frappe.db.bulk_insert(
 			"Whatsapp Message Log",
-			["message", "recipient", "status"],
-			map(lambda a, b: (a, b, "Queued"), messages),
+			["message", "recipient", "status", "name"],
+			map(lambda t: (*t, "Queued", hash("".join(t))), messages),
+			ignore_duplicates=True,
 		)
 
 
-def send_whatsapp(
-	messages: Iterable[tuple[str, str] | tuple[str, str, str]]
-) -> None:
+def send_whatsapp(messages: Iterable[tuple[str, str] | tuple[str, str, str]]) -> None:
 	settings = frappe.get_single("WhatsApp Settings")
 
 	if not settings.jid:
@@ -159,7 +159,7 @@ def send_whatsapp(
 	sprint = settings.work_sprint or 1080
 	sprint_jitter = settings.work_sprint_jitter or 300
 	pause = settings.pause or 480
-	pause_jitter = settings.pause_jitter or 180 
+	pause_jitter = settings.pause_jitter or 180
 
 	start_time = time.time()
 
@@ -187,7 +187,7 @@ def send_whatsapp(
 		success = settings._post({"cmd": "send", "args": [recp, msg]})
 		if wml and success is not None:
 			frappe.db.set_value("Whatsapp Message Log", wml, "status", "Sent")
-			frappe.db.commit() # ensure status is persistet
+			frappe.db.commit()  # ensure status is persistet
 		time.sleep(randint(wait - jitter, wait + jitter))
 		if time.time() - start_time > needs_pause:
 			time.sleep(pause)
