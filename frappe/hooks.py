@@ -212,8 +212,12 @@ scheduler_events = {
 		"30 * * * *": [
 			"frappe.core.doctype.prepared_report.prepared_report.expire_stalled_report",
 		],
-		# # At 07:15.
-		"15 7 * * *": [
+		# At 07:15 on every day-of-week from Monday through Saturday.
+		"15 7 * * 1-6": [
+			"frappe.email.doctype.notification.notification.trigger_daily_alerts",
+		],
+		# At 10:15 on Sunday.
+		"15 10 * * 0": [
 			"frappe.email.doctype.notification.notification.trigger_daily_alerts",
 		],
 		# At minute 0 past every 3rd hour from 7 through 20.
