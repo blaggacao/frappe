@@ -7,6 +7,7 @@
  "field_order": [
   "recipient",
   "status",
+  "send_now",
   "message"
  ],
  "fields": [
@@ -33,11 +34,21 @@
    "label": "Status",
    "options": "Queued\nSent",
    "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "send_now",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Send Now",
+   "options": "Queued\nSent",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-05-20 14:14:06.573523",
+ "modified": "2024-05-27 03:42:10.257221",
  "modified_by": "Administrator",
  "module": "Integrations",
  "name": "Whatsapp Message Log",

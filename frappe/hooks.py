@@ -200,6 +200,9 @@ doc_events = {
 
 scheduler_events = {
 	"cron": {
+		"0/5 * * * *": [
+			"frappe.integrations.doctype.whatsapp_message_log.whatsapp_message_log.send_missing_send_now",
+		],
 		"0/15 * * * *": [
 			"frappe.oauth.delete_oauth2_data",
 			"frappe.website.doctype.web_page.web_page.check_publish_status",

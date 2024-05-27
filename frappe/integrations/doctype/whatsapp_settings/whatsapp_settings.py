@@ -126,6 +126,7 @@ def enqueue_whatsapp(messages: Iterable[tuple[str, str]], try_send_now=False) ->
 				{
 					"message": message,
 					"recipient": recipient,
+					"send_now": True,
 					"status": "Queued",
 				}
 			)
@@ -181,13 +182,19 @@ def send_whatsapp(messages: Iterable[tuple[str, str] | tuple[str, str, str]]) ->
 			wml, recp, msg = tup
 			# guard against parallel processing of a queue item
 			# by the background and by the immediate send
-			status = frappe.db.get_value("Whatsapp Message Log", wml, "status")
-			if status == "Sent":
+			doc = frappe.get_doc("Whatsapp Message Log", wml)
+			try:
+				doc.lock()
+			except frappe.DocumentLockedError:
+				continue
+			if doc.status == "Sent":
 				continue
 		success = settings._post({"cmd": "send", "args": [recp, msg]})
 		if wml and success is not None:
 			frappe.db.set_value("Whatsapp Message Log", wml, "status", "Sent")
 			frappe.db.commit()  # ensure status is persistet
+		if wml:
+			doc.unlock()
 		time.sleep(randint(wait - jitter, wait + jitter))
 		if time.time() - start_time > needs_pause:
 			time.sleep(pause)
