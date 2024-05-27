@@ -140,6 +140,7 @@ class MatrixSettings(Document):
 		)
 
 
+@frappe.whitelist()
 def send_matrix(msg, formatted_msg, user, recipients=None, room_id=None):
 	matrix = frappe.get_single("Matrix Settings")
 

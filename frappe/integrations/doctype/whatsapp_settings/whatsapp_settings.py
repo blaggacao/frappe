@@ -149,6 +149,7 @@ def enqueue_whatsapp(messages: Iterable[tuple[str, str]], try_send_now=False) ->
 		)
 
 
+@frappe.whitelist()
 def send_whatsapp(messages: Iterable[tuple[str, str] | tuple[str, str, str]]) -> None:
 	settings = frappe.get_single("WhatsApp Settings")
 
