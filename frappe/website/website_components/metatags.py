@@ -22,6 +22,8 @@ class MetaTags:
 		if not self.tags.get("title"):
 			self.tags["title"] = self.context.get("name")
 
+		self.tags["url"] = frappe.utils.get_url(self.path)
+
 		if self.tags.get("image"):
 			self.tags["image"] = frappe.utils.get_url(self.tags["image"])
 
