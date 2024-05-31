@@ -123,7 +123,7 @@ class Address(Document):
 		return False
 
 	def before_insert(self):
-		# self.set_location()
+		self._set_location()
 		pass
 
 	@frappe.whitelist()
@@ -140,22 +140,22 @@ class Address(Document):
 		self.latitude = p.y
 		self.longitude = p.x
 
-	@frappe.whitelist()
-	def set_location(self):
+	def _set_location(self):
 		from frappe.geo import utils
 
 		geocode = self.fetch_geocode()
 		if not geocode:
 			return
-		data = frappe._dict(
-			{
-				"name": self.name,
-				"latitude": geocode["geometry"]["location"]["lat"],
-				"longitude": geocode["geometry"]["location"]["lng"],
-			}
-		)
-		self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
-		self.location_reviewed = False
+		if not self.location:
+			data = frappe._dict(
+				{
+					"name": self.name,
+					"latitude": geocode["geometry"]["location"]["lat"],
+					"longitude": geocode["geometry"]["location"]["lng"],
+				}
+			)
+			self.location = json.dumps(utils.convert_to_geojson("coordinates", [data]))
+			self.location_reviewed = False
 
 		line3, zipcode = [], None
 		for address_component in geocode["address_components"]:
@@ -167,11 +167,14 @@ class Address(Document):
 			if list(set(address_component["types"]) & {"postal_code"}):
 				zipcode = address_component["long_name"]
 
-		if line3:
+		if line3 and not self.address_line3:
 			self.address_line3 = ", ".join(line3)
-		if zipcode:
+		if zipcode and not self.pincode:
 			self.pincode = zipcode
 
+	@frappe.whitelist()
+	def set_location(self):
+		self._set_location()
 		self.save()
 
 	@frappe.whitelist()
@@ -199,7 +202,10 @@ class Address(Document):
 			components["postal_code"] = self.pincode
 
 		try:
-			geocodes = maps_client.geocode(self.address_line1, components=components)
+			if self.latitude and self.longitude:
+				geocodes = maps_client.reverse_geocode((self.latitude, self.longitude))
+			else:
+				geocodes = maps_client.geocode(self.address_line1, components=components)
 		except Exception as e:
 			frappe.throw(_(str(e)))
 
