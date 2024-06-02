@@ -221,7 +221,7 @@ scheduler_events = {
 		],
 		# At 10:15 on Sunday.
 		"15 10 * * 0": [
-			"frappe.email.doctype.notification.notification.trigger_daily_alerts",
+			"frappe.email.doctype.notification.notification.trigger_daily_alerts_sunday",
 		],
 		# At minute 0 past every 3rd hour from 7 through 20.
 		"0 7-20/3 * * *": [

@@ -696,6 +696,10 @@ def trigger_daily_alerts():
 	trigger_notifications(None, "daily")
 
 
+def trigger_daily_alerts_sunday():
+	trigger_notifications(None, "daily")
+
+
 def trigger_notifications(doc, method=None):
 	if frappe.flags.in_import or frappe.flags.in_patch:
 		# don't send notifications while syncing or patching
