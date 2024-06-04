@@ -1,6 +1,6 @@
 import frappe
 
-METATAGS = ("title", "description", "image", "author", "published_on")
+METATAGS = ("title", "description", "image", "audio", "video", "site_name", "author", "published_on")
 
 
 class MetaTags:
