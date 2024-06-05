@@ -395,7 +395,7 @@ def get_context(context):
 				customer = d.get(field)
 				phone_no = frappe.get_value("Customer", customer, "mobile_no")
 				if not phone_no:
-					self.log_error(_("Customer {0} has no Mobile No set").format(user))
+					self.log_error(_("Customer {0} has no Mobile No set").format(customer))
 			else:
 				frappe.throw(
 					_("Field {0} on document {1} is neither a Mobile No data field nor a User link").format(
@@ -425,7 +425,7 @@ def get_context(context):
 				customer = d.get(field)
 				phone_no = frappe.get_value("Customer", customer, "mobile_no")
 				if not phone_no:
-					self.log_error(_("Customer {0} has no Mobile No set").format(user))
+					self.log_error(_("Customer {0} has no Mobile No set").format(customer))
 			else:
 				frappe.throw(
 					_("Field {0} on document {1} is neither a Mobile No data field nor a User link").format(
