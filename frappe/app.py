@@ -271,8 +271,13 @@ def set_cors_headers(response):
 	cors_headers = {
 		"Access-Control-Allow-Credentials": "true",
 		"Access-Control-Allow-Origin": origin,
-		"Vary": "Origin",
 	}
+
+	vary = response.headers.get("Vary")
+	if not vary:
+		cors_headers["Vary"] = "Origin"
+	elif "Origin" not in vary:
+		cors_headers["Vary"] = f"{vary},Origin"
 
 	# only required for preflight requests
 	if request.method == "OPTIONS":
