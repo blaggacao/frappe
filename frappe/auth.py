@@ -97,7 +97,7 @@ class HTTPRequest:
 
 
 class LoginManager:
-	__slots__ = ("user", "info", "full_name", "user_type", "resume")
+	__slots__ = ("user", "info", "full_name", "user_type", "user_lang", "resume")
 
 	def __init__(self):
 		self.user = None
@@ -419,7 +419,9 @@ def get_logged_user():
 def clear_cookies():
 	if hasattr(frappe.local, "session"):
 		frappe.session.sid = ""
-	frappe.local.cookie_manager.delete_cookie(["full_name", "user_id", "sid", "user_image", "system_user"])
+	frappe.local.cookie_manager.delete_cookie(
+		["full_name", "user_id", "sid", "user_image", "user_lang", "system_user"]
+	)
 
 
 def validate_ip_address(user):
