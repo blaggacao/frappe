@@ -264,6 +264,7 @@ frappe.request.call = function (opts) {
 				"X-Frappe-CSRF-Token": frappe.csrf_token,
 				Accept: "application/json",
 				"X-Frappe-CMD": (opts.args && opts.args.cmd) || "" || "",
+				"Accept-Language": frappe.get_cookie("preferred_language") || frappe.get_cookie("user_lang"),
 			},
 			opts.headers
 		),

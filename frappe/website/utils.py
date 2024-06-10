@@ -517,7 +517,7 @@ def cache_html(func):
 				html = page_cache[frappe.local.lang]
 			if html:
 				frappe.local.response.from_cache = True
-				frappe.local.response.allow_cache = True
+				frappe.local.response.can_cache = True
 				return html
 		html = func(*args, **kwargs)
 		context = args[0].context
@@ -525,7 +525,7 @@ def cache_html(func):
 			page_cache = frappe.cache.hget("website_page", args[0].path) or {}
 			page_cache[frappe.local.lang] = html
 			frappe.cache.hset("website_page", args[0].path, page_cache)
-			frappe.local.response.allow_cache = True
+			frappe.local.response.can_cache = True
 
 		return html
 
@@ -539,14 +539,6 @@ def build_response(path, data, http_status_code, headers: dict | None = None):
 	response.status_code = http_status_code
 	response.headers["X-Page-Name"] = cstr(path.encode("ascii", errors="xmlcharrefreplace"))
 	response.headers["X-From-Cache"] = frappe.local.response.from_cache or False
-	if frappe.local.response.allow_cache or False:
-		# X-Lang can be crafted by the proxy to select so the right cache is selected
-		# nginx has a char limit of 42 on them and treats all other as '*' non cachable
-		response.headers["Vary"] = "X-Lang,Accept-Encoding"
-		# 3h, 1h, 3h
-		response.headers["Cache-Contol"] = "s-maxage=10800,max-age=3600,stale-while-revalidate=10800"
-	else:
-		response.headers["Cache-Contol"] = "no-store,no-cache,must-revalidate,max-age=0"
 
 	add_preload_for_bundled_assets(response)
 

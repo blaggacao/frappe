@@ -237,8 +237,20 @@ def process_response(response):
 	if not response:
 		return
 
+	# cache control headers
+	if frappe.local.response.can_cache:
+		response.headers.extend({
+			# 3h, 1h, 3h
+			"Cache-Contol": "s-maxage=10800,max-age=3600,stale-while-revalidate=10800",
+		    "Vary": "Accept-Language",
+		})
+	else:
+		response.headers.extend({
+			"Cache-Contol": "no-store,no-cache,must-revalidate,max-age=0",
+		})
+
 	# set cookies
-	if hasattr(frappe.local, "cookie_manager"):
+	if hasattr(frappe.local, "cookie_manager") and not frappe.local.response.can_cache:
 		frappe.local.cookie_manager.flush_cookies(response=response)
 
 	# rate limiter headers
