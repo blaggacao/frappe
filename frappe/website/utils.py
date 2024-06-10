@@ -541,9 +541,8 @@ def build_response(path, data, http_status_code, headers: dict | None = None):
 	response.headers["X-From-Cache"] = frappe.local.response.from_cache or False
 	if frappe.local.response.allow_cache or False:
 		# X-Lang can be crafted by the proxy to select so the right cache is selected
-		# Origin is a trick to avoid CORS problems
 		# nginx has a char limit of 42 on them and treats all other as '*' non cachable
-		response.headers["Vary"] = "Origin,X-Lang,Accept-Encoding"
+		response.headers["Vary"] = "X-Lang,Accept-Encoding"
 		# 3h, 1h, 3h
 		response.headers["Cache-Contol"] = "s-maxage=10800,max-age=3600,stale-while-revalidate=10800"
 	else:
