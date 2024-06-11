@@ -241,12 +241,12 @@ def process_response(response):
 	if frappe.local.response.can_cache:
 		response.headers.extend({
 			# 3h, 1h, 3h
-			"Cache-Contol": "s-maxage=10800,max-age=3600,stale-while-revalidate=10800",
+			"Cache-Control": "s-maxage=10800,max-age=3600,stale-while-revalidate=10800",
 		    "Vary": "Accept-Language",
 		})
 	else:
 		response.headers.extend({
-			"Cache-Contol": "no-store,no-cache,must-revalidate,max-age=0",
+			"Cache-Control": "no-store,no-cache,must-revalidate,max-age=0",
 		})
 
 	# set cookies
@@ -283,13 +283,8 @@ def set_cors_headers(response):
 	cors_headers = {
 		"Access-Control-Allow-Credentials": "true",
 		"Access-Control-Allow-Origin": origin,
+		"Vary": "Origin",
 	}
-
-	vary = response.headers.get("Vary")
-	if not vary:
-		cors_headers["Vary"] = "Origin"
-	elif "Origin" not in vary:
-		cors_headers["Vary"] = f"{vary},Origin"
 
 	# only required for preflight requests
 	if request.method == "OPTIONS":
