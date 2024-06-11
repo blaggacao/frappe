@@ -8,6 +8,7 @@ import os
 import re
 
 from werkzeug.exceptions import HTTPException, NotFound
+from werkzeug.http import generate_etag, is_resource_modified
 from werkzeug.middleware.profiler import ProfilerMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.middleware.shared_data import SharedDataMiddleware
@@ -148,8 +149,12 @@ def application(request: Request):
 			# We can not handle exceptions safely here.
 			frappe.logger().error("Failed to run after request hook", exc_info=True)
 
-		log_request(request, response)
-		process_response(response)
+	log_request(request, response)
+	# return 304 if unmodified
+	etag = generate_etag(response.data)
+	if is_resource_modified(request.environ, etag):
+		return Response(status=304, headers={"ETag": etag})
+	process_response(response)
 
 	return response
 
@@ -233,25 +238,27 @@ def log_request(request, response):
 		)
 
 
-def process_response(response):
+def process_response(request, response):
 	if not response:
 		return
 
-	# cache control headers
+	# cache control
+	# read: https://simonhearne.com/2022/caching-header-best-practices/
 	if frappe.local.response.can_cache:
-		response.headers.extend({
-			# 3h, 1h, 3h
-			"Cache-Control": "s-maxage=10800,max-age=3600,stale-while-revalidate=10800",
-		    "Vary": "Accept-Language",
-		})
+		response.headers.extend(
+			{
+				# default: 5m (proxy), 5m (client), 3h (allow stale resources for this long if upstream is down)
+				"Cache-Control": "public,s-maxage=300,max-age=300,stale-while-revalidate=10800",
+				# for revalidation of a stale resource
+				"Etag": generate_etag(response.data),
+			}
+		)
 	else:
-		response.headers.extend({
-			"Cache-Control": "no-store,no-cache,must-revalidate,max-age=0",
-		})
-
-	# set cookies
-	if hasattr(frappe.local, "cookie_manager") and not frappe.local.response.can_cache:
-		frappe.local.cookie_manager.flush_cookies(response=response)
+		response.headers.extend(
+			{
+				"Cache-Control": "no-store,no-cache,must-revalidate,max-age=0",
+			}
+		)
 
 	# rate limiter headers
 	if hasattr(frappe.local, "rate_limiter"):
@@ -263,6 +270,12 @@ def process_response(response):
 	# CORS headers
 	if hasattr(frappe.local, "conf"):
 		set_cors_headers(response)
+
+	# set cookies
+	if hasattr(frappe.local, "cookie_manager") and not frappe.local.response.can_cache:
+		frappe.local.cookie_manager.flush_cookies(response=response)
+
+	return response
 
 
 def set_cors_headers(response):

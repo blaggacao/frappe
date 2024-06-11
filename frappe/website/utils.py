@@ -49,7 +49,7 @@ def find_first_image(html):
 def can_cache(no_cache=False):
 	if frappe.flags.force_website_cache:
 		return True
-	if frappe.conf.disable_website_cache or frappe.conf.developer_mode:
+	if frappe.conf.disable_website_cache:  # or frappe.conf.developer_mode:
 		return False
 	if getattr(frappe.local, "no_cache", False):
 		return False
