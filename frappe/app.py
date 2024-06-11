@@ -238,7 +238,7 @@ def log_request(request, response):
 		)
 
 
-def process_response(request, response):
+def process_response(response):
 	if not response:
 		return
 
@@ -260,6 +260,10 @@ def process_response(request, response):
 			}
 		)
 
+	# set cookies
+	if hasattr(frappe.local, "cookie_manager") and not frappe.local.response.can_cache:
+		frappe.local.cookie_manager.flush_cookies(response=response)
+
 	# rate limiter headers
 	if hasattr(frappe.local, "rate_limiter"):
 		response.headers.extend(frappe.local.rate_limiter.headers())
@@ -270,12 +274,6 @@ def process_response(request, response):
 	# CORS headers
 	if hasattr(frappe.local, "conf"):
 		set_cors_headers(response)
-
-	# set cookies
-	if hasattr(frappe.local, "cookie_manager") and not frappe.local.response.can_cache:
-		frappe.local.cookie_manager.flush_cookies(response=response)
-
-	return response
 
 
 def set_cors_headers(response):
