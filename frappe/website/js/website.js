@@ -88,7 +88,6 @@ $.extend(frappe, {
 			headers: {
 				"X-Frappe-CSRF-Token": frappe.csrf_token,
 				"X-Frappe-CMD": (opts.args && opts.args.cmd) || "" || "",
-				"Accept-Language": frappe.get_cookie("preferred_language") || frappe.get_cookie("user_lang"),
 			},
 			statusCode: opts.statusCode || {
 				404: function () {
