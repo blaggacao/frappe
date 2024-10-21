@@ -136,7 +136,8 @@ class Filters(list[FilterTuple]):
 			)
 			raise ValueError(error_context) from e
 
-		self.optimize()
+		if self:  # only optimize non-empty; avoid infinit recursion
+			self.optimize()
 
 	def _init_from_mapping(self, s: FilterMappingSpec, doctype: Doct) -> None:
 		for k, v in s.items():
