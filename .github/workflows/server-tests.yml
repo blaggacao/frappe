@@ -20,7 +20,7 @@ permissions:
 jobs:
   typecheck:
     name: Types
-    uses: frappe/frappe/.github/workflows/type-check-base.yml@develop
+    uses: blaggacao/frappe/.github/workflows/type-check-base.yml@develop
 
   checkrun:
     name: Plan Tests
@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   test:
     name: Tests
-    uses: frappe/frappe/.github/workflows/tests-base.yml@develop
+    uses: blaggacao/frappe/.github/workflows/tests-base.yml@develop
     with:
       enable-postgres: true  # This will test against both MariaDB and PostgreSQL
       parallel-runs: 2
@@ -51,8 +51,6 @@ jobs:
       enable-coverage: ${{ github.event_name != 'pull_request' }}
       fake-success: ${{ needs.checkrun.outputs.build != 'strawberry' }}
     needs: checkrun
-    env:
-      FRAPPE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
 
   coverage:
     name: Coverage Wrap Up
