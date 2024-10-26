@@ -125,7 +125,7 @@ jobs:
           - 2525:25
           - 3000:80
     steps:
-      - uses: frappe/frappe/.github/actions/setup@develop
+      - uses: blaggacao/frappe/.github/actions/setup@develop
         name: Environment Setup
         with:
           python-version: '3.12'
