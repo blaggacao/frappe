@@ -43,6 +43,7 @@ jobs:
 
     - name: Update to v14
       run: |
+        cd ~/frappe-bench/apps/frappe/
         function update_to_version() {
           version=$1
 
@@ -64,6 +65,7 @@ jobs:
 
     - name: Update to v15
       run: |
+        cd ~/frappe-bench/apps/frappe/
         function update_to_version() {
           version=$1
 
@@ -84,6 +86,7 @@ jobs:
 
     - name: Update to last commit
       run: |
+        cd ~/frappe-bench/apps/frappe/
         echo "Updating to last commit"
         pgrep honcho | xargs kill
         sleep 3
