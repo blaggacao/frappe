@@ -2,6 +2,10 @@ name: Patch Base
 on:
   workflow_call:
     inputs:
+      fake-success:
+        required: false
+        type: boolean
+        default: false
       python-version:
         required: false
         type: string
@@ -11,12 +15,25 @@ on:
         type: number
         default: 20
 jobs:
+  # This satisfies the required checks on pull requests if tests are intentionally skipped
+  migration-test-fake:
+    name: Migrate
+    runs-on: ubuntu-latest
+    if: ${{ inputs.fake-success != false }}
+    steps:
+      - name: Pass skipped tests unconditionally
+        run: "echo Skipped"
+
   migration-test:
     name: Migrate
     runs-on: ubuntu-latest
+    if: ${{ inputs.fake-success == false }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
+    env:
+      PYTHONWARNINGS: "ignore"
+      DB_ROOT_PASSWORD: db_root
     services:
       mariadb:
         image: mariadb:11.3
@@ -24,12 +41,17 @@ jobs:
           - 3306:3306
         options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=3
         env:
-          MARIADB_ROOT_PASSWORD: ${{ env.MARIADB_ROOT_PASSWORD }}
+          MARIADB_ROOT_PASSWORD: ${{ env.DB_ROOT_PASSWORD }}
     steps:
     - uses: frappe/frappe/.github/actions/setup@develop
+      name: Environment Setup
       with:
-        python-version: '3.12'
+        python-version: '3.10'
         node-version: 20
+        build-assets: false
+        disable-socketio: true
+        disable-web: true
+        db-root-password: ${{ env.DB_ROOT_PASSWORD }}
 
     - name: Recover v13 database artifact
       run: |

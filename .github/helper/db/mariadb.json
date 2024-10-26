@@ -12,7 +12,7 @@
  "mail_password": "test",
  "admin_password": "admin",
  "root_login": "root",
- "root_password": "mdbroot",
+ "root_password": "db_root",
  "host_name": "http://test_site:8000",
  "monitor": 1,
  "server_script_enabled": true

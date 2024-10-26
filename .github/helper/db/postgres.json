@@ -12,7 +12,7 @@
  "mail_password": "test",
  "admin_password": "admin",
  "root_login": "postgres",
- "root_password": "psqlroot",
+ "root_password": "db_root",
  "host_name": "http://test_site:8000",
  "server_script_enabled": true
 }
