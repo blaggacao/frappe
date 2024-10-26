@@ -1,0 +1,343 @@
+name: Tests Base
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: false
+        type: string
+        default: '3.12'
+      node-version:
+        required: false
+        type: number
+        default: 20
+      parallel-runs:
+        required: false
+        type: number
+        default: 2
+      build-assets:
+        required: false
+        type: boolean
+        default: true
+      enable-postgres:
+        required: false
+        type: boolean
+        default: false
+      enable-coverage:
+        required: false
+        type: boolean
+        default: false
+      enable-watch:
+        required: false
+        type: boolean
+        default: false
+      enable-schedule:
+        required: false
+        type: boolean
+        default: false
+      disable-socketio:
+        required: false
+        type: boolean
+        default: false
+      disable-redis-socketio:
+        required: false
+        type: boolean
+        default: false
+
+
+jobs:
+  unit-test:
+    name: Unit
+    runs-on: ubuntu-latest
+    steps:
+      - id: placeholder
+        run: |
+          echo "Evolution towards a set of (fast) unit tests which run without a DB connection is being planned"
+  gen-idx-integration:
+    needs: unit-test
+    name: Gen Integration Test Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      indices: ${{ steps.set-indices.outputs.indices }}
+    steps:
+      - id: set-indices
+        run: |
+          indices=$(seq -s ',' 1 ${{ inputs.parallel-runs }}); echo "indices=[${indices}]" >> $GITHUB_OUTPUT
+  integration-test:
+    needs: gen-idx-integration
+    name: Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: "production"
+      PYTHONOPTIMIZE: 2
+      # noisy 3rd party library warnings
+      PYTHONWARNINGS: "module,ignore:::babel.messages.extract"
+      MARIADB_ROOT_PASSWORD: mdbroot
+      POSTGRES_PASSWORD: psqlroot
+      COVERAGE_RCFILE: ~/frappe-bench/apps/frappe/.coveragerc
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db: ${{ fromJson(inputs.enable-postgres && '["mariadb", "postgres"]' || '["mariadb"]') }}
+        index: ${{ fromJson(needs.gen-idx-integration.outputs.indices) }}
+    services:
+      mariadb:
+        image: mariadb:11.3
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=2s --health-retries=3
+        env:
+          MARIADB_ROOT_PASSWORD: ${{ env.MARIADB_ROOT_PASSWORD }}
+      postgres:
+        image: postgres:12.4
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+      smtp_server:
+        image: rnwood/smtp4dev
+        ports:
+          - 2525:25
+          - 3000:80
+    steps:
+      - name: Clone
+        uses: actions/checkout@v4
+        with:
+          path: ${{ github.event.repository.name }}
+
+      - name: Checkout Frappe
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.GH_ORG || github.repository_owner }}/frappe
+          ref: ${{ env.FRAPPE_BRANCH || github.base_ref || github.ref_name }}
+          path: frappe
+        if: github.event.repository.name != 'frappe'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+      - name: Check for valid Python & Merge Conflicts
+        run: |
+          python -m compileall -q -f "${GITHUB_WORKSPACE}/${{ github.event.repository.name }}"
+          if grep -lr --exclude-dir=node_modules "^<<<<<<< " "${GITHUB_WORKSPACE}/${{ github.event.repository.name }}"
+              then echo "Found merge conflicts"
+              exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          check-latest: true
+      - name: Add test_site to /etc/hosts
+        run: |
+          echo "127.0.0.1 test_site" | sudo tee -a /etc/hosts
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/*requirements.txt', '**/pyproject.toml', '**/setup.py') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - id: yarn-cache-dir-path
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v4
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install System Dependencies
+        run: |
+          echo "Setting Up System Dependencies..."
+
+          echo "::group::apt packages"
+          sudo apt update
+          sudo apt remove mysql-server mysql-client
+          sudo apt install libcups2-dev redis-server mariadb-client-10.6
+
+          install_wkhtmltopdf() {
+            if [ "$(lsb_release -rs)" = "22.04" ]; then
+                wget -O /tmp/wkhtmltox.deb https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+                sudo apt install /tmp/wkhtmltox.deb
+            else
+                echo "Please update frappe/.github/lib/tests.yml to support wkhtmltopdf for $(lsb_release -ds)"
+                exit 1
+            fi
+          }
+          install_wkhtmltopdf &
+          echo "::endgroup::"
+
+          git config --global init.defaultBranch main
+          git config --global advice.detachedHead false
+
+      - name: Install Bench
+        run: |
+          cd ~ || exit
+          pip install frappe-bench
+
+      - name: Init Bench
+        run: |
+          cd ~ || exit
+          verbosity="${BENCH_INIT_VERBOSITY_FLAG:-}"
+          bench $verbosity init frappe-bench --skip-assets --python "$(which python)" --frappe-path "${GITHUB_WORKSPACE}/frappe"
+
+      - name: Install App(s)
+        run: |
+          cd ~/frappe-bench || exit
+          verbosity="${BENCH_INIT_VERBOSITY_FLAG:-}"
+
+          for app in ${GITHUB_WORKSPACE}/*/; do
+            if [ -f "${app}setup.py" ] || [ -f "${app}pyproject.toml" ]; then
+              start_time=$(date +%s)
+              echo "Installing app in ${app}"
+              pip install --upgrade -e "${app}[dev,test]"
+              end_time=$(date +%s)
+              echo "Time taken to Install ${app} requirements: $((end_time - start_time)) seconds"
+            fi
+          done
+          # collect old style tools.bench.dev-dependencies
+          bench $verbosity setup requirements --dev;
+          if [ "$TYPE" == "ui" ]
+          then
+            bench $verbosity setup requirements --node;
+          fi
+        env:
+          TYPE: server
+
+      - name: Setup Test Site
+        run: |
+          cd ~/frappe-bench || exit
+
+          mkdir ~/frappe-bench/sites/test_site
+
+          # Attempt to copy the configuration file
+          if cp "${GITHUB_WORKSPACE}/${{ github.event.repository.name }}/.github/helper/db/$DB.json" ~/frappe-bench/sites/test_site/site_config.json; then
+              echo "Successfully copied ${DB}.json to site_config.json."
+          else
+              echo "Error: The configuration file ${GITHUB_WORKSPACE}/${{ github.event.repository.name }}/.github/helper/db/$DB.json does not exist."
+              echo "Please ensure that the database JSON file is correctly named and located in the helper/db directory."
+              exit 1  # Exit with a non-zero status to indicate failure
+          fi
+
+          if [ "$DB" == "mariadb" ]
+          then
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "SET GLOBAL character_set_server = 'utf8mb4'";
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'";
+
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "CREATE DATABASE test_frappe";
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "CREATE USER 'test_frappe'@'localhost' IDENTIFIED BY 'test_frappe'";
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "GRANT ALL PRIVILEGES ON \`test_frappe\`.* TO 'test_frappe'@'localhost'";
+
+            mariadb --host 127.0.0.1 --port 3306 -u root -p${{ env.MARIADB_ROOT_PASSWORD }} -e "FLUSH PRIVILEGES";
+          elif [ "$DB" == "postgres" ]
+          then
+            echo "${{ env.POSTGRES_PASSWORD }}" | psql -h 127.0.0.1 -p 5432 -c "CREATE DATABASE test_frappe" -U postgres;
+            echo "${{ env.POSTGRES_PASSWORD }}" | psql -h 127.0.0.1 -p 5432 -c "CREATE USER test_frappe WITH PASSWORD 'test_frappe'" -U postgres;
+          fi
+        env:
+          DB: ${{ matrix.db }}
+
+      - name: Modify Procfile
+        run: |
+          cd ~/frappe-bench || exit
+          if ${{ inputs.enable-watch != 'true' }}; then
+            sed -i 's/^watch:/# watch:/g' Procfile
+          fi
+          if ${{ inputs.enable-schedule != 'true'}}; then
+            sed -i 's/^schedule:/# schedule:/g' Procfile
+          fi
+          if ${{ inputs.disable-socketio }}; then
+            sed -i 's/^socketio:/# socketio:/g' Procfile
+          fi
+          if ${{ inputs.disable-redis-socketio }}; then
+            sed -i 's/^redis_socketio:/# redis_socketio:/g' Procfile
+          fi
+          if ${{ inputs.enable-coverage }}; then
+            sed -i 's/^web: bench serve/web: bench serve --with-coverage/g' Procfile
+          fi
+
+      - name: Display modified Procfile
+        run: |
+          cd ~/frappe-bench || exit
+          cat Procfile
+
+      - name: Start Bench
+        run: |
+          cd ~/frappe-bench || exit
+          bench start &> ~/frappe-bench/bench_start.log &
+
+      - name: Build Assets
+        if: ${{ inputs.build-assets }}
+        run: |
+          cd ~/frappe-bench || exit
+          CI=Yes bench build --app frappe
+
+      - name: Reinstall Test Site
+        run: |
+          cd ~/frappe-bench || exit
+          bench --site test_site reinstall --yes
+
+      - name: Run Unit Tests
+        run: |
+          cd ~/frappe-bench || exit
+          bench --site test_site \
+            run-parallel-tests \
+            --app "${{ github.event.repository.name }}" \
+            --total-builds ${{ inputs.parallel-runs }} \
+            --build-number ${{ matrix.index }} 2> >(tee -a stderr.log >&2)
+
+          # Process warnings and create annotations
+          if [ -s stderr.log ] && [ "$DB" == "mariadb" ]; then
+            echo "Processing deprecation warnings..."
+            grep -E "DeprecationWarning" stderr.log | sort -u | while read -r warning; do
+              # Extract file path, line number, and warning type
+              file_info=$(echo "$warning" | grep -oP '^.*?:\d+:')
+              file_path=$(echo "$file_info" | cut -d':' -f1)
+              line_number=$(echo "$file_info" | cut -d':' -f2)
+              warning_type=$(echo "$warning" | grep -oP '\w+Warning')
+  
+              # Extract the actual warning message
+              message=$(echo "$warning" | sed -E "s/^.*$warning_type: //")
+  
+              # Create the annotation
+              echo "::warning file=${file_path},line=${line_number}::${warning_type}: ${message}"
+            done
+          else
+            echo "No deprecation warnings found."
+          fi
+        env:
+          DB: ${{ matrix.db }}
+          # consumed by bench run-parallel-tests
+          CAPTURE_COVERAGE: ${{ inputs.enable-coverage }}
+
+      - name: Upload coverage data
+        uses: actions/upload-artifact@v3
+        if: inputs.enable-coverage
+        with:
+          name: coverage-${{ matrix.db }}-${{ matrix.index }}
+          path: ~/frappe-bench/sites/*-coverage*.xml
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ failure() && contains( github.event.pull_request.labels.*.name, 'debug-gha') }}
+
+      - name: Show bench output
+        if: ${{ always() }}
+        run: |
+          cd ~/frappe-bench || exit
+          cat bench_start.log || true
+          cd logs
+          for f in ./*.log*; do
+            echo "Printing log: $f";
+            cat $f
+          done
+

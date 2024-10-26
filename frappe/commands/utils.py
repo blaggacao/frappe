@@ -780,7 +780,7 @@ def serve(
 		site = None
 	else:
 		site = context.sites[0]
-	with CodeCoverage(with_coverage, "frappe"):
+	with CodeCoverage(with_coverage, "frappe", outfile="server-coverage.xml"):
 		if with_coverage:
 			# unable to track coverage with threading enabled
 			no_threading = True
