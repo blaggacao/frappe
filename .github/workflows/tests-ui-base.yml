@@ -26,7 +26,6 @@ on:
 
 jobs:
   gen-idx-integration:
-    needs: unit-test
     name: Gen Integration Test Matrix
     runs-on: ubuntu-latest
     outputs:
