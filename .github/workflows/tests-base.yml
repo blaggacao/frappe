@@ -133,6 +133,8 @@ jobs:
           disable-socketio: true
           db-root-password: ${{ env.DB_ROOT_PASSWORD }}
           db: ${{ matrix.db }}
+        env:
+          PYTHONWARNINGS: "ignore:Unimplemented abstract methods {'locate_file'}:DeprecationWarning"
 
       - name: Run Tests
         run: |
