@@ -235,7 +235,7 @@ runs:
     run: |
       # Display modified Procfile
       cd ~/frappe-bench || exit
-      cat Procfile
+      cat Procfile | awk '{print "\033[0;34m" $0 "\033[0m"}'
 
   - shell: bash -e {0}
     run: |
