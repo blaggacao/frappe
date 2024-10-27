@@ -59,7 +59,7 @@ jobs:
       NODE_ENV: "production"
       PYTHONOPTIMIZE: 2
       # noisy 3rd party library warnings
-      PYTHONWARNINGS: "module,ignore:::babel.messages.extract"
+      PYTHONWARNINGS: "ignore"
       DB_ROOT_PASSWORD: db_root
       COVERAGE_RCFILE: ~/frappe-bench/apps/frappe/.coveragerc
 
